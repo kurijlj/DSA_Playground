@@ -1,5 +1,5 @@
 # DSA_Playground
-[![GitHub Super-Linter](https://github.com/<OWNER>/<REPOSITORY>/actions/workflows/<WORKFLOW_FILE_NAME>/badge.svg)](https://github.com/marketplace/actions/super-linter)
+[![GitHub Super-Linter](https://github.com/kurijlj/DSA_Playground/actions/workflows/linter.yml/badge.svg)](https://github.com/marketplace/actions/super-linter)
 
 DSA_Playground is a comprehensive repository dedicated to the implementation of
 essential data structures and algorithms. Featuring code written in Java,
