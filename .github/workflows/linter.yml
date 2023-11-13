@@ -10,19 +10,19 @@ jobs:
 
         steps:
             - name: Checkout Code
-                uses: actions/checkout@v4
-                with:
-                    fetch-depth: 0
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
             
             - name: Lint Code Base
-                uses: super-linter/super-linter@v5
-                env:
-                    VALIDATE_ALL_CODEBASE: true
-                    DEFAULT_BRANCH: main
-                    VALIDATE_YAML: true
-                    VALIDATE_MARKDOWN: true
-                    VALIDATE_JAVA_CHECKSTYLE: true
-                    VALIDATE_PYTHON_PYLINT: true
-                    VALIDATE_CPP_CPPLINT: true
-                    VALIDATE_MATLAB_MLINT: true
-                    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              uses: super-linter/super-linter@v5
+              env:
+                  VALIDATE_ALL_CODEBASE: true
+                  DEFAULT_BRANCH: main
+                  VALIDATE_YAML: true
+                  VALIDATE_MARKDOWN: true
+                  VALIDATE_JAVA_CHECKSTYLE: true
+                  VALIDATE_PYTHON_PYLINT: true
+                  VALIDATE_CPP_CPPLINT: true
+                  VALIDATE_MATLAB_MLINT: true
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
