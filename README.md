@@ -33,7 +33,7 @@ Feel free to tailor these descriptions according to your vision for the project.
 
 1. **Clone the Repository:** Clone this repository to your local machine using
 the following command:
- ```
+ ```shell
  git clone git@github.com:kurijlj/DSA_Playground.git
  ```
 
