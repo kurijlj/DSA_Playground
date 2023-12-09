@@ -2,7 +2,7 @@
 
 ## Description
 
-The `find_middle_node()` method aims to determine the index of the middle node within a linked list. It employs the slow and fast pointer technique, ensuring optimal performance.
+The `find_middle_node()` function aims to determine the index of the middle node within a linked list. It employs the slow and fast pointer technique, ensuring optimal performance.
 
 ## Features
 
@@ -16,14 +16,14 @@ The algorithmic approach involves initializing two pointers, a slow and a fast o
 
 ## Usage
 
-```cpp
-#include "linkedlist.hpp"  // Include your linked list header file
+```c
+#include "linkedlist.h"  // Include your linked list header file
 
 // ...
 
-LinkedList myList;
+linkedlist_t *my_list = create_linkedlist();
 // Populate the linked list
 
-int middleIndex = myList.find_middle_node();
+int middle_index = find_middle_node(my_list);
 // Handle the result accordingly
 ```
