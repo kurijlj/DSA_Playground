@@ -288,11 +288,11 @@ void LinkedList::reverse(void) {
     this->head_ = prev;
 }
 
-/* -----------------------------------------------------------------------------
+/* --------------------------------------------------------------------------
  *
  * Method: find_middle_node
  * 
- * -----------------------------------------------------------------------------
+ * --------------------------------------------------------------------------
  * 
  * Description:
  *      Find the middle node of a linked list. It returns the index of the
@@ -319,6 +319,7 @@ int LinkedList::find_middle_node(void) {
     if (this->head_ == nullptr) {
         return idx;
     }
+
     LinkedList::Node *slow = this->head_;
     LinkedList::Node *fast = this->head_;
     idx = 0;
@@ -327,6 +328,7 @@ int LinkedList::find_middle_node(void) {
         slow = slow->next();
         fast = fast->next()->next();
     }
+
     return idx;
 }
 

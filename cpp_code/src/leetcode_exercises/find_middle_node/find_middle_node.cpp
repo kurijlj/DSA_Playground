@@ -1,5 +1,5 @@
 /* ==========================================================================
- * linkedlist.c - Main program file demonstrating linked list functionality.
+ * find_middle_node.cpp - Demonstrate find_middle_node() method.
  *
  *  Copyright (C) 2023 Ljubomir Kurij <ljubomir_kurij@protonmail.com>
  *
@@ -21,7 +21,7 @@
 
 /* ==========================================================================
  *
- * 2023-11-28 Ljubomir Kurij <ljubomir_kurij@protonmail.com>
+ * 2023-12-02 Ljubomir Kurij <ljubomir_kurij@protonmail.com>
  *
  * * linkedlist.c: created.
  *

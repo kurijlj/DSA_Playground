@@ -21,7 +21,7 @@
 
 /* ==========================================================================
  *
- * 2023-11-28 Ljubomir Kurij <ljubomir_kurij@protonmail.com>
+ * 2023-12-09 Ljubomir Kurij <ljubomir_kurij@protonmail.com>
  *
  * * linkedlist.h: created.
  *
@@ -75,7 +75,6 @@ void set_node(linkedlist_t *list, int index, int data);
 void insert_node(linkedlist_t *list, int index, int data);
 node_t *remove_node(linkedlist_t *list, int index);
 void reverse_linkedlist(linkedlist_t *list);
-int find_middle_node(linkedlist_t *list);
 
 
 /* ==========================================================================
@@ -259,6 +258,50 @@ void reverse_linkedlist(linkedlist_t *list) {
 
     list->tail = list->head;
     list->head = prev;
+}
+
+/* --------------------------------------------------------------------------
+ *
+ * Function: find_middle_node
+ *
+ *
+ * --------------------------------------------------------------------------
+ * 
+ * Description:
+ *      Find the middle node of a linked list. It returns the index of the
+ *      middle node if the list is not empty, otherwise it returns -1.
+ * 
+ *      This method uses the "slow and fast" pointer technique to find the
+ *      middle node. The slow pointer moves one node at a time, while the fast
+ *      pointer moves two nodes at a time. When the fast pointer reaches the end
+ *      of the list, the slow pointer will be pointing to the middle node.
+ * 
+ *      Time complexity: O(n)
+ *      Space complexity: O(1)
+ * 
+ * Usage:
+ *      int idx = find_middle_node(list);
+ * 
+ * Returns:
+ *      The index of the middle node if the list is not empty, otherwise it
+ *      returns -1.
+ * -------------------------------------------------------------------------- */
+int find_middle_node(linkedlist_t *list) {
+    int idx = -1;
+    if(list->head == NULL) {
+        return idx;
+    }
+
+    node_t *slow = list->head;
+    node_t *fast = list->head;
+    idx = 0;
+    while (fast != NULL && fast->next != NULL) {
+        idx++;
+        slow = slow->next;
+        fast = fast->next->next;
+    }
+
+    return idx;
 }
 
 #endif  /* LINKEDLIST_H */
