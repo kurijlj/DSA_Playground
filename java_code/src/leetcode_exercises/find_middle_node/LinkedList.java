@@ -21,7 +21,7 @@
 
 // =============================================================================
 //
-// 2023-11-13 Ljubomir Kurij <ljubomir_kurij@protonmail.com>
+// 2023-12-09 Ljubomir Kurij <ljubomir_kurij@protonmail.com>
 //
 // * LinkedList.java: created.
 //
@@ -31,7 +31,7 @@
 // =============================================================================
 // Packages import section
 // =============================================================================
-package datastructures.linkedlist;
+package leetcode_exercises.find_middle_node;
 
 
 // =============================================================================
@@ -247,6 +247,48 @@ public class LinkedList {
 
         this.tail = this.head;
         this.head = previous;
+    }
+
+    // -----------------------------------------------------------------------------
+    // Method: findMiddleNode()
+    // -----------------------------------------------------------------------------
+    //
+    // Description:
+    //      Find the middle node of a linked list. It returns the index of the
+    //      middle node if the list is not empty, otherwise it returns -1.
+    //
+    //      This method uses the "slow and fast" pointer technique to find the
+    //      middle node. The slow pointer moves one node at a time, while the fast
+    //      pointer moves two nodes at a time. When the fast pointer reaches the end
+    //      of the list, the slow pointer will be pointing to the middle node.
+    //
+    //      Time complexity: O(n)
+    //      Space complexity: O(1)
+    //
+    // Usage:
+    //      int idx = list.findMiddleNode();
+    //
+    // Returns:
+    //      The index of the middle node if the list is not empty, otherwise it
+    //      returns -1.
+    //
+    // -----------------------------------------------------------------------------
+    public int findMiddleNode() {
+        int idx = -1;
+        if (this.head == null) {
+            return idx;
+        }
+        Node slow = this.head;
+        Node fast = this.head;
+        idx = 0;
+
+        while(fast != null && fast.getNext() != null) {
+            idx++;
+            slow = slow.getNext();
+            fast = fast.getNext().getNext();
+        }
+
+        return idx;
     }
 }
 
