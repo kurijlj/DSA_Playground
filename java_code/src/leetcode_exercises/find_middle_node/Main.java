@@ -1,5 +1,5 @@
 // =============================================================================
-// Main.java - Demonstrate the implementation of a common linked list.
+// Main.java - Demonstrate the findMiddleNode() method.
 //
 //  Copyright (C) 2023 Ljubomir Kurij <ljubomir_kurij@protonmail.com>
 //
@@ -21,7 +21,7 @@
 
 // =============================================================================
 //
-// 2023-11-13 Ljubomir Kurij <ljubomir_kurij@protonmail.com>
+// 2023-12-09 Ljubomir Kurij <ljubomir_kurij@protonmail.com>
 //
 // * Mian.java: created.
 //
@@ -31,7 +31,7 @@
 // =============================================================================
 // Packages import section
 // =============================================================================
-package datastructures.linkedlist;
+package leetcode_exercises.find_middle_node;
 
 
 // =============================================================================
@@ -41,64 +41,35 @@ public class Main {
     // -------------------------------------------------------------------------
     // Main method
     // -------------------------------------------------------------------------
-public static void main(String[] args) {
-        // Test the constructor
-        System.out.println("Test the constructor:");
+    public static void main(String[] args) {
+        // Create empty linked list
+        System.out.println("Create empty linked list:");
         LinkedList list = new LinkedList();
         list.print();
 
-        // Test the append() method
-        System.out.println("Test the append() method:");
+        // Test if the findMiddleNode() method works correctly on an empty list
+        System.out.println("Test if the findMiddleNode() method works correctly on an empty list:");
+        System.out.println(list.findMiddleNode());
+
+        // Test if the findMiddleNode() method works correctly on a list with one node
+        System.out.println("Test if the findMiddleNode() method works correctly on a list with one node:");
         list.append(0);
+        list.print();
+        System.out.println("Middle: " + list.findMiddleNode());
+
+        // Test if the findMiddleNode() method works correctly on a list with even number of nodes
+        System.out.println("Test if the findMiddleNode() method works correctly on a list with even number of nodes:");
         list.append(1);
         list.append(2);
         list.append(3);
+        list.print();
+        System.out.println("Middle: " + list.findMiddleNode());
+
+        // Test if the findMiddleNode() method works correctly on a list with odd number of nodes
+        System.out.println("Test if the findMiddleNode() method works correctly on a list with odd number of nodes:");
         list.append(4);
         list.print();
-
-        // Test the prepend() method
-        System.out.println("Test the prepend() method:");
-        list.prepend(-1);
-        list.prepend(-2);
-        list.print();
-
-        // Test the insert() method
-        System.out.println("Test the insert() method:");
-        list.insert(0, -3);
-        list.insert(1, -4);
-        list.insert(2, -5);
-        list.print();
-
-        // Test the popBack() method
-        System.out.println("Test the popBack() method:");
-        System.out.println(list.popBack().getData());
-        list.print();
-
-        // Test the popFront() method
-        System.out.println("Test the popFront() method:");
-        System.out.println(list.popFront().getData());
-        list.print();
-
-        // Test the remove() method
-        System.out.println("Test the remove() method:");
-        System.out.println(list.remove(0).getData());
-        list.print();
-
-        // Test the get() method
-        System.out.println("Test the get() method:");
-        System.out.println(list.get(0).getData());
-        System.out.println(list.get(1).getData());
-
-        // Test the set() method
-        System.out.println("Test the set() method:");
-        System.out.println(list.set(0, 10).getData());
-        System.out.println(list.set(1, 11).getData());
-        list.print();
-
-        // Test the reverse() method
-        System.out.println("Test the reverse() method:");
-        list.reverse();
-        list.print();
+        System.out.println("Middle: " + list.findMiddleNode());
     }
 }
 
