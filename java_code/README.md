@@ -20,6 +20,6 @@ To demonstrate the functionality, run the **\`Main.java\`** file using the
 following
 command:
 ```shell
-$ cd ./project/.../folder
-$ javac Main.java
+cd ./project/.../folder
+javac Main.java
 ```
