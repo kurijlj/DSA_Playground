@@ -21,7 +21,7 @@
 
 # ==============================================================================
 #
-# 2023-11-14 Ljubomir Kurij <ljubomir_kurij@protonmail.com>
+# 2023-12-10 Ljubomir Kurij <ljubomir_kurij@protonmail.com>
 #
 # * LinkedList.py: created.
 #
@@ -65,7 +65,10 @@ class LinkedList:
         current = self.__head
         result = "LinkedList("
         while current != None:
-            result += str(current.data) + ", "
+            if current.next == None:
+                result += str(current.data)
+            else:
+                result += str(current.data) + ", "
             current = current.next
         result += ")"
 
@@ -196,6 +199,49 @@ class LinkedList:
         
         self.__head = previous
     
-    # End of class LinkedList
+    # --------------------------------------------------------------------------
+    #
+    # Method: find_middle_node
+    #
+    # --------------------------------------------------------------------------
+    #
+    # Description:
+    #       Find the middle node of a linked list. It returns the index of the
+    #       middle node if the list is not empty, otherwise it returns -1.
+    # 
+    #       This method uses the "slow and fast" pointer technique to find the
+    #       middle node. The slow pointer moves one node at a time, while the
+    #       fast pointer moves two nodes at a time. When the fast pointer
+    #       reaches the end of the list, the slow pointer will be pointing to
+    #       the middle node.
+    # 
+    #       Time complexity: O(n)
+    #       Space complexity: O(1)
+    # 
+    # Usage:
+    #       idx = list.find_middle_node();
+    # 
+    # Returns:
+    #       The index of the middle node if the list is not empty, otherwise it
+    #       returns -1.
+    # 
+    # --------------------------------------------------------------------------
+    def find_middle_node(self) -> int:
+        idx = -1
+        if self.__head == None:
+            return idx
+        
+        slow = self.__head
+        fast = self.__head
+        idx = 0
+
+        while fast != None and fast.next != None:
+            idx += 1
+            slow = slow.next
+            fast = fast.next.next
+        
+        return idx
+    
+    # End of Class LinkedList
 
 # End of LinkedList.py

@@ -1,5 +1,42 @@
+# ==============================================================================
+# test.py - Demonstrate the implementation of the LinkedList class.
+#
+#  Copyright (C) 2023 Ljubomir Kurij <ljubomir_kurij@protonmail.com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# ==============================================================================
+
+
+# ==============================================================================
+#
+# 2023-11-14 Ljubomir Kurij <ljubomir_kurij@protonmail.com>
+#
+# * test.py: created.
+#
+# ==============================================================================
+
+
+# ==============================================================================
+# Modules Import Section
+# ==============================================================================
 import LinkedList
 
+
+# ==============================================================================
+# Main Section
+# ==============================================================================
 if __name__ == "__main__":
     # Create a new linked list
     print("Creating a new linked list...\n")
@@ -78,3 +115,7 @@ if __name__ == "__main__":
     ll.reverse()
     print(ll)
     print("\n")
+
+    # End of Main Section
+
+# End of test.py
