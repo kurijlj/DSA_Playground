@@ -19,12 +19,12 @@ This repository contains a C implementation of essential data structures and alg
 Build as a regular CMake project:
 1. Create a build directory and `cd` into it. Then create a directory structure
 and makefiles using:
-```
+```shell
 $ cmake -DCMAKE_C_COMPILER=clang -DCMAKE_BUILD_TYPE=Debug -DBUILD_SHARED_LIBS:BOOL=FALSE -DBUILD_TESTING:BOOL=FALSE -S ./path/to/src -B .
 $ cmake --build . --config Debug
 ```
 or
-```
+```shell
 $ cmake -DCMAKE_C_COMPILER=clang -DCMAKE_BUILD_TYPE=Debug -DBUILD_SHARED_LIBS:BOOL=FALSE -DBUILD_TESTING:BOOL=FALSE -S ./path/to/src -B .
 $ make
 ```
@@ -32,12 +32,12 @@ $ make
 for \*NIX platforms,
 
 2. or using:
-```
+```shell
 $ cmake -DCMAKE_C_COMPILER=clang -DBUILD_SHARED_LIBS:BOOL=FALSE -DBUILD_TESTING:BOOL=FALSE -S ./path/to/src -B .
 $ cmake --build . --config Debug
 ```
 or
-```
+```shell
 $ cmake -DCMAKE_C_COMPILER=clang -DBUILD_SHARED_LIBS:BOOL=FALSE -DBUILD_TESTING:BOOL=FALSE -S ./path/to/src -B .
 $ msbuild.exe myproject.sln
 ```
@@ -45,7 +45,7 @@ $ msbuild.exe myproject.sln
 for the Win64 platform.
 
 Build parameters can take the following values:
-```
+```shell
 -DCMAKE_C_COMPILER=(clang-c/cl/gcc/...)
 -DCMAKE_BUILD_TYPE=(Debug/RelWithDebInfo/Release/MinSizeRel)
 -DBUILD_SHARED_LIBS:BOOL=(TRUE/FALSE)

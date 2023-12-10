@@ -19,6 +19,6 @@ This repository contains a Python implementation of essential data structures an
 To demonstrate the functionality, run the **\`test.py\`** file using the following
 command:
 ```shell
-> cd ./project/.../folder
-> python test.py
+$ cd ./project/.../folder
+$ python test.py
 ```
