@@ -48,6 +48,64 @@
  * Algorithms Definitions Section
  * ========================================================================== */
 
+heap_ll_node_t *heap_ll_node_create(void *data, char const **error) {
+  heap_ll_node_t *node = calloc(1, sizeof(heap_ll_node_t));
+  if (node == NULL) {
+  if (NULL != error) {
+    *error = k_calloc_error;
+  }
+
+  return NULL;
+  }
+
+  node->data = data;
+
+  return node;
+
+}
+
+heap_ll_t *heap_ll_create(
+    int (*data_to_string)(char **buffer, void *data, char const **error),
+    bool (*data_equals)(void *data1, void *data2),
+    bool (*data_less)(void *data1, void *data2),
+    bool (*data_greater)(void *data1, void *data2),
+    bool (*data_less_or_equal)(void *data1, void *data2),
+    bool (*data_greater_or_equal)(void *data1, void *data2),
+    char const **error) {
+  if (NULL == data_to_string) {
+    if (NULL != error) {
+      *error = k_data_to_string_null;
+    }
+
+    return NULL;
+  }
+
+  if (NULL == data_equals) {
+    if (NULL != error) {
+      *error = k_data_equals_null;
+    }
+
+    return NULL;
+  }
+
+  heap_ll_t *heap = calloc(1, sizeof(heap_ll_t));
+  if (heap == NULL) {
+    if (NULL != error) {
+      *error = k_calloc_error;
+    }
+
+    return NULL;
+  }
+
+  heap->data_to_string = data_to_string;
+  heap->data_equals = data_equals;
+  heap->data_less = data_less;
+  heap->data_greater = data_greater;
+  heap->data_less_or_equal = data_less_or_equal;
+  heap->data_greater_or_equal = data_greater_or_equal;
+
+  return heap;
+}
 
 
 /* End of "DSA Playground" generic_heap_ll.c */

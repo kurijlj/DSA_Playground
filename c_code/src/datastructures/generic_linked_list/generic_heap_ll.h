@@ -49,6 +49,23 @@
 
 
 /* ==========================================================================
+ * Global Macros Section
+ * ========================================================================== */
+
+#define global_char_const static char const * const
+
+
+/* ==========================================================================
+ * Global Constants Section
+ * ========================================================================== */
+
+global_char_const k_no_error = "No error";
+global_char_const k_calloc_error = "Error while allocating memory using calloc";
+global_char_const k_data_to_string_null = "Missing `data_to_string` argument";
+global_char_const k_data_equals_null = "Missing `data_equals` argument";
+
+
+/* ==========================================================================
  * Data Structures Section
  * ========================================================================== */
 
@@ -141,6 +158,22 @@ typedef struct heap_ll {
     bool (*data_less_or_equal)(void *data1, void *data2);
     bool (*data_greater_or_equal)(void *data1, void *data2);
 } heap_ll_t;
+
+
+/* ==========================================================================
+ * Function Prototypes Section
+ * ========================================================================== */
+
+heap_ll_node_t *heap_ll_node_create(void *data, char const **error);
+heap_ll_t *heap_ll_create(
+  int (*data_to_string)(char **buffer, void *data, char const **error),
+  bool (*data_equals)(void *data1, void *data2),
+  bool (*data_less)(void *data1, void *data2),
+  bool (*data_greater)(void *data1, void *data2),
+  bool (*data_less_or_equal)(void *data1, void *data2),
+  bool (*data_greater_or_equal)(void *data1, void *data2),
+  char const **error
+);
 
 
 /* ==========================================================================
