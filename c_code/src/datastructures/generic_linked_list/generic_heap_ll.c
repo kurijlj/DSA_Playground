@@ -17,6 +17,7 @@
  * with Focus Precision Analyze. If not, see <https://www.gnu.org/licenses/>.
  * ========================================================================== */
 
+
 /* ==========================================================================
  *
  * 2024-05-28 Ljubomir Kurij <ljubomir_kurij@protonmail.com>
@@ -49,13 +50,14 @@
  * ========================================================================== */
 
 heap_ll_node_t *heap_ll_node_create(void *data, char const **error) {
+  *error = k_no_error; /* Set error to default value */
+  printf("k_no_error: %p\n", k_no_error);
+
   heap_ll_node_t *node = calloc(1, sizeof(heap_ll_node_t));
   if (node == NULL) {
-  if (NULL != error) {
     *error = k_calloc_error;
-  }
 
-  return NULL;
+    return NULL;
   }
 
   node->data = data;
@@ -72,27 +74,23 @@ heap_ll_t *heap_ll_create(
     bool (*data_less_or_equal)(void *data1, void *data2),
     bool (*data_greater_or_equal)(void *data1, void *data2),
     char const **error) {
+  *error = k_no_error; /* Set error to default value */
+
   if (NULL == data_to_string) {
-    if (NULL != error) {
-      *error = k_data_to_string_null;
-    }
+    *error = k_data_to_string_null;
 
     return NULL;
   }
 
   if (NULL == data_equals) {
-    if (NULL != error) {
-      *error = k_data_equals_null;
-    }
+    *error = k_data_equals_null;
 
     return NULL;
   }
 
   heap_ll_t *heap = calloc(1, sizeof(heap_ll_t));
   if (heap == NULL) {
-    if (NULL != error) {
-      *error = k_calloc_error;
-    }
+    *error = k_calloc_error;
 
     return NULL;
   }
