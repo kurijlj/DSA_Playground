@@ -22,7 +22,7 @@
  *
  * 2024-05-29 Ljubomir Kurij <ljubomir_kurij@protonmail.com>
  *
- * * generic_heap_ll_test.c: created.
+ * * generic_linked_list_test.c: created.
  *
  * ========================================================================== */
 
@@ -32,7 +32,7 @@
  * ========================================================================== */
 
 /* Related header */
-#include "generic_heap_ll.h"
+#include "generic_linked_list.h"
 
 /* System headers */
 
@@ -50,7 +50,7 @@
  * Macros Definitions Section
  * ========================================================================== */
 
-#define APP_NAME "generic_heap_ll_test"
+#define APP_NAME "generic_linked_list_test"
 #define APP_VERSION "1.0"
 #define APP_AUTHOR "Ljubomir Kurij"
 #define APP_EMAIL "ljubomir_kurij@protonmail.com"
@@ -90,7 +90,7 @@ int version_info(struct argparse *self, const struct argparse_option *option);
  * User Defined Function Declarations Section
  * ========================================================================== */
 
-int int_to_string(char **buffer, void *data, char const **error);
+int int_to_string(char **buffer, void *data, generic_ll_error_t *error);
 bool data_equals(void *data1, void *data2);
 
 
@@ -132,26 +132,19 @@ int main(int argc, char **argv) {
     /* No arguments were given */
     int data = 42;
     char *buffer = NULL;
-    char const *error = NULL;
+    generic_ll_error_t error = NO_ERROR;
     printf("%s> Program execution started!\n", APP_NAME);
-    printf("%s> Allocating memory for a new node...\n", APP_NAME);
-    printf("%s> error: %p\n", APP_NAME, error);
     heap_ll_node_t *node = heap_ll_node_create(&data, &error);
-    if (error) {
-      printf("%s> k_no_error: %p\n", APP_NAME, k_no_error);
-      printf("%s> error: %p\n", APP_NAME, error);
-    }
-    if (k_no_error != error) {
-      fprintf(stderr, "%s> ERROR: %s\n", APP_NAME, error);
+    if (NO_ERROR != error) {
+      fprintf(stderr, "%s> ERROR: %s\n", APP_NAME, error_message[error]);
       status = EXIT_FAILURE;
     } else {
-      printf("%s: Converting data to string...\n", APP_NAME);
       int_to_string(&buffer, node->data, &error);
-      if (k_no_error != error) {
-        fprintf(stderr, "%s> ERROR: %s\n", APP_NAME, error);
+      if (NO_ERROR != error) {
+        fprintf(stderr, "%s> ERROR: %s\n", APP_NAME, error_message[error]);
         status = EXIT_FAILURE;
       } else {
-        printf("Data: %s\n", buffer);
+        printf("%s> Data=%s\n", APP_NAME, buffer);
       }
     }
 
@@ -222,14 +215,15 @@ int version_info(struct argparse *self, const struct argparse_option *option) {
  * User Defined Function Definitions Section
  * ========================================================================== */
 
-int int_to_string(char **buffer, void *data, char const **error) {
+int int_to_string(char **buffer, void *data, generic_ll_error_t *error) {
   int *int_data = (int *)data;
   int size = snprintf(NULL, 0, "%d", *int_data);
   *buffer = calloc(size + 1, sizeof(char));
+  *error = NO_ERROR;
+
   if (*buffer == NULL) {
-    if (NULL != error) {
-      *error = k_calloc_error;
-    }
+    *error = CALLOC_ERROR;
+
     return -1;
   }
 

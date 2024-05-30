@@ -22,7 +22,7 @@
  *
  * 2024-05-28 Ljubomir Kurij <ljubomir_kurij@protonmail.com>
  *
- * * generic_heap_ll.h: created.
+ * * generic_linked_list.h: created.
  *
  * ========================================================================== */
 
@@ -31,8 +31,8 @@
  * Header guard
  * ========================================================================== */
 
-#ifndef GENERIC_HEAP_LL_H
-#define GENERIC_HEAP_LL_H
+#ifndef GENERIC_LINKED_LIST_H
+#define GENERIC_LINKED_LIST_H
 
 
 /* ==========================================================================
@@ -51,20 +51,22 @@
 
 
 /* ==========================================================================
- * Global Macros Section
+ * Error Codes Section
  * ========================================================================== */
 
-#define global_char_const static char const * const
+typedef enum {
+  NO_ERROR,
+  CALLOC_ERROR,
+  DATA_TO_STRING_NULL,
+  DATA_EQUALS_NULL
+} generic_ll_error_t;
 
-
-/* ==========================================================================
- * Global Constants Section
- * ========================================================================== */
-
-global_char_const k_no_error = "No error";
-global_char_const k_calloc_error = "Error while allocating memory using calloc";
-global_char_const k_data_to_string_null = "Missing `data_to_string` argument";
-global_char_const k_data_equals_null = "Missing `data_equals` argument";
+static char const * const error_message[] = {
+  "No error.",
+  "Error allocating memory using calloc.",
+  "Data to string function is NULL.",
+  "Data equals function is NULL."
+};
 
 
 /* ==========================================================================
@@ -166,7 +168,7 @@ typedef struct heap_ll {
  * Function Prototypes Section
  * ========================================================================== */
 
-heap_ll_node_t *heap_ll_node_create(void *data, char const **error);
+heap_ll_node_t *heap_ll_node_create(void *data, generic_ll_error_t *error);
 heap_ll_t *heap_ll_create(
   int (*data_to_string)(char **buffer, void *data, char const **error),
   bool (*data_equals)(void *data1, void *data2),
@@ -174,7 +176,7 @@ heap_ll_t *heap_ll_create(
   bool (*data_greater)(void *data1, void *data2),
   bool (*data_less_or_equal)(void *data1, void *data2),
   bool (*data_greater_or_equal)(void *data1, void *data2),
-  char const **error
+  generic_ll_error_t *error
 );
 
 
@@ -182,6 +184,6 @@ heap_ll_t *heap_ll_create(
  * End of Header guard
  * ========================================================================== */
 
-#endif  /* GENERIC_HEAP_LL_H */
+#endif  /* GENERIC_LINKED_LIST_H */
 
-/* End of file generic_heap_ll.h */
+/* End of file generic_linked_list.h */

@@ -22,7 +22,7 @@
  *
  * 2024-05-28 Ljubomir Kurij <ljubomir_kurij@protonmail.com>
  *
- * * generic_heap_ll.c: created.
+ * * generic_Linked_list.c: created.
  *
  * ========================================================================== */
 
@@ -32,7 +32,7 @@
  * ========================================================================== */
 
 /* Related header */
-#include "generic_heap_ll.h"
+#include "generic_Linked_list.h"
 
 /* System headers */
 
@@ -49,13 +49,15 @@
  * Algorithms Definitions Section
  * ========================================================================== */
 
-heap_ll_node_t *heap_ll_node_create(void *data, char const **error) {
-  *error = k_no_error; /* Set error to default value */
-  printf("k_no_error: %p\n", k_no_error);
+heap_ll_node_t *heap_ll_node_create(
+    void *data, 
+    generic_ll_error_t *error
+    ) {
+  *error = NO_ERROR; /* Set error to default value */
 
   heap_ll_node_t *node = calloc(1, sizeof(heap_ll_node_t));
   if (node == NULL) {
-    *error = k_calloc_error;
+    *error = CALLOC_ERROR;
 
     return NULL;
   }
@@ -73,24 +75,25 @@ heap_ll_t *heap_ll_create(
     bool (*data_greater)(void *data1, void *data2),
     bool (*data_less_or_equal)(void *data1, void *data2),
     bool (*data_greater_or_equal)(void *data1, void *data2),
-    char const **error) {
-  *error = k_no_error; /* Set error to default value */
+    generic_ll_error_t *error
+    ) {
+  *error = NO_ERROR; /* Set error to default value */
 
   if (NULL == data_to_string) {
-    *error = k_data_to_string_null;
+    *error = DATA_TO_STRING_NULL;
 
     return NULL;
   }
 
   if (NULL == data_equals) {
-    *error = k_data_equals_null;
+    *error = DATA_EQUALS_NULL;
 
     return NULL;
   }
 
   heap_ll_t *heap = calloc(1, sizeof(heap_ll_t));
   if (heap == NULL) {
-    *error = k_calloc_error;
+    *error = CALLOC_ERROR;
 
     return NULL;
   }
@@ -106,4 +109,4 @@ heap_ll_t *heap_ll_create(
 }
 
 
-/* End of "DSA Playground" generic_heap_ll.c */
+/* End of generic_Linked_list.c */
