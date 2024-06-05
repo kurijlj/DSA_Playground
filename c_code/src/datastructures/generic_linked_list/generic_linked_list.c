@@ -49,13 +49,13 @@
  * Algorithms Definitions Section
  * ========================================================================== */
 
-heap_ll_node_t *heap_ll_node_create(
+GenericLLNode *generic_ll_create_node(
     void *data, 
-    generic_ll_error_t *error
+    GenericLLError *error
     ) {
   *error = NO_ERROR; /* Set error to default value */
 
-  heap_ll_node_t *node = calloc(1, sizeof(heap_ll_node_t));
+  GenericLLNode *node = calloc(1, sizeof(GenericLLNode));
   if (node == NULL) {
     *error = CALLOC_ERROR;
 
@@ -68,14 +68,14 @@ heap_ll_node_t *heap_ll_node_create(
 
 }
 
-heap_ll_t *heap_ll_create(
+GenericLL *generic_ll_create(
     int (*data_to_string)(char **buffer, void *data, char const **error),
     bool (*data_equals)(void *data1, void *data2),
     bool (*data_less)(void *data1, void *data2),
     bool (*data_greater)(void *data1, void *data2),
     bool (*data_less_or_equal)(void *data1, void *data2),
     bool (*data_greater_or_equal)(void *data1, void *data2),
-    generic_ll_error_t *error
+    GenericLLError *error
     ) {
   *error = NO_ERROR; /* Set error to default value */
 
@@ -91,7 +91,7 @@ heap_ll_t *heap_ll_create(
     return NULL;
   }
 
-  heap_ll_t *heap = calloc(1, sizeof(heap_ll_t));
+  GenericLL *heap = calloc(1, sizeof(GenericLL));
   if (heap == NULL) {
     *error = CALLOC_ERROR;
 

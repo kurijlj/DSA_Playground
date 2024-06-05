@@ -59,7 +59,7 @@ typedef enum {
   CALLOC_ERROR,
   DATA_TO_STRING_NULL,
   DATA_EQUALS_NULL
-} generic_ll_error_t;
+} GenericLLError;
 
 static char const * const error_message[] = {
   "No error.",
@@ -74,26 +74,26 @@ static char const * const error_message[] = {
  * ========================================================================== */
 
 /* -------------------------------------------------------------------------- 
- * Structure: heap_ll_node_t
+ * Structure: GenericLLNode
  * -------------------------------------------------------------------------- 
  * Description: 
  * 
  * Data members:
  *                   void *data: 
- *    struct heap_ll_node *next: 
+ *    struct generic_ll_node *next: 
  * 
  * Methods:
  * 
  * Usage:
  * 
  * -------------------------------------------------------------------------- */
-typedef struct heap_ll_node {
+typedef struct generic_ll_node {
     void *data;
-    struct heap_ll_node *next;
-} heap_ll_node_t;
+    struct generic_ll_node *next;
+} GenericLLNode;
 
 /* -------------------------------------------------------------------------- 
- * Structure: heap_ll_t
+ * Structure: GenericLL
  * -------------------------------------------------------------------------- 
  * Description: A generic linked list structure that uses a heap to store the
  *              elements. Linked list is implemented as a singly linked list.
@@ -151,9 +151,9 @@ typedef struct heap_ll_node {
  * Usage:
  * 
  * -------------------------------------------------------------------------- */
-typedef struct heap_ll {
-    heap_ll_node_t *head;
-    heap_ll_node_t *tail;
+typedef struct generic_ll {
+    GenericLLNode *head;
+    GenericLLNode *tail;
     size_t size;
     int (*data_to_string)(char **buffer, void *data, char const **error);
     bool (*data_equals)(void *data1, void *data2);
@@ -161,22 +161,99 @@ typedef struct heap_ll {
     bool (*data_greater)(void *data1, void *data2);
     bool (*data_less_or_equal)(void *data1, void *data2);
     bool (*data_greater_or_equal)(void *data1, void *data2);
-} heap_ll_t;
+} GenericLL;
 
 
 /* ==========================================================================
  * Function Prototypes Section
  * ========================================================================== */
 
-heap_ll_node_t *heap_ll_node_create(void *data, generic_ll_error_t *error);
-heap_ll_t *heap_ll_create(
+/* -------------------------------------------------------------------------- 
+ * Function: generic_ll_create_node
+ * -------------------------------------------------------------------------- 
+ * Description: Create a new node for the linked list.
+ * 
+ *              The function allocates memory for the new node and sets the
+ *              data pointer to the data passed as an argument. The next
+ *              pointer is set to NULL.
+ * 
+ *              The function returns a pointer to the new node.
+ * 
+ *              If the function fails to allocate memory for the new node, it
+ *              returns NULL, and the error parameter is set to CALLOC_ERROR.
+ *              If the error parameter is NULL, the function will not set the
+ *              error parameter.
+ * 
+ *              This function is used internally by the linked list functions.
+ *              It is not intended to be used by the user.
+ * 
+ * Parameters:
+ *  - void *data: The data to be stored in the new node.
+ *  - GenericLLError *error: A pointer to a GenericLLError variable to store
+ *    the error code. If NULL, the function will not set the error parameter.
+ * 
+ * Returns:
+ *  - GenericLLNode *: A pointer to the new node.
+ * 
+ * -------------------------------------------------------------------------- */
+GenericLLNode *generic_ll_create_node(void *data, GenericLLError *error);
+
+/* -------------------------------------------------------------------------
+  * Function: generic_ll_create
+  * -------------------------------------------------------------------------
+  * 
+  * Description: Create a generic linked list.
+  * 
+  *              The function creates a generic linked list and returns a
+  *              pointer to it.
+  * 
+  *              The function also initializes the pointers to the functions
+  *              that:
+  *               - convert data to string.
+  *               - compare two data for equality.
+  *               - compare two data for less.
+  *               - compare two data for greater.
+  *               - compare two data for less or equal.
+  *               - compare two data for greater or equal.
+  *
+  *               of which the pointers to first two functions are mandatory.
+  *               First function is used to convert data to string, and is used
+  *               for printing the data in the linked list. Second function is
+  *               used to compare two data for equality, and is used for
+  *               searching the linked list. If the pointers to the first two
+  *               functions are NULL, the function returns NULL, and sets the
+  *               error code to DATA_TO_STRING_NULL or DATA_EQUALS_NULL,
+  *               respectively. Pointers to the rest of the functions can be
+  *               NULL, and are used for sorting the linked list. If any of the
+  *               pointers to the sorting functions are NULL, the lists sorting
+  *               facilities (i.e. functions) are disabled.
+  * 
+  *               The function returns NULL if memory allocation fails, and sets
+  *               the error code to CALLOC_ERROR.
+  *
+  * Parameters:
+  *  - data_to_string: pointer to a function that converts data to string.
+  *  - data_equals: pointer to a function that compares two data for equality.
+  *  - data_less: pointer to a function that compares two data for less.
+  *  - data_greater: pointer to a function that compares two data for greater.
+  *  - data_less_or_equal: pointer to a function that compares two data for less
+  *    or equal.
+  *  - data_greater_or_equal: pointer to a function that compares two data for
+  *    greater or equal.
+  *  - error: pointer to GenericLLError to store error code.
+  *
+  * Returns:
+  * - GenericLL: pointer to the generic linked list.
+  * 
+  * ------------------------------------------------------------------------- */
+GenericLL *generic_ll_create(
   int (*data_to_string)(char **buffer, void *data, char const **error),
   bool (*data_equals)(void *data1, void *data2),
   bool (*data_less)(void *data1, void *data2),
   bool (*data_greater)(void *data1, void *data2),
   bool (*data_less_or_equal)(void *data1, void *data2),
   bool (*data_greater_or_equal)(void *data1, void *data2),
-  generic_ll_error_t *error
+  GenericLLError *error
 );
 
 

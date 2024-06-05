@@ -90,7 +90,7 @@ int version_info(struct argparse *self, const struct argparse_option *option);
  * User Defined Function Declarations Section
  * ========================================================================== */
 
-int int_to_string(char **buffer, void *data, generic_ll_error_t *error);
+int int_to_string(char **buffer, void *data, GenericLLError *error);
 bool data_equals(void *data1, void *data2);
 
 
@@ -132,9 +132,9 @@ int main(int argc, char **argv) {
     /* No arguments were given */
     int data = 42;
     char *buffer = NULL;
-    generic_ll_error_t error = NO_ERROR;
+    GenericLLError error = NO_ERROR;
     printf("%s> Program execution started!\n", APP_NAME);
-    heap_ll_node_t *node = heap_ll_node_create(&data, &error);
+    GenericLLNode *node = generic_ll_create_node(&data, &error);
     if (NO_ERROR != error) {
       fprintf(stderr, "%s> ERROR: %s\n", APP_NAME, error_message[error]);
       status = EXIT_FAILURE;
@@ -215,7 +215,7 @@ int version_info(struct argparse *self, const struct argparse_option *option) {
  * User Defined Function Definitions Section
  * ========================================================================== */
 
-int int_to_string(char **buffer, void *data, generic_ll_error_t *error) {
+int int_to_string(char **buffer, void *data, GenericLLError *error) {
   int *int_data = (int *)data;
   int size = snprintf(NULL, 0, "%d", *int_data);
   *buffer = calloc(size + 1, sizeof(char));
