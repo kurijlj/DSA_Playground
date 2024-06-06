@@ -58,14 +58,20 @@ typedef enum {
   NO_ERROR,
   CALLOC_ERROR,
   DATA_TO_STRING_NULL,
-  DATA_EQUALS_NULL
+  DATA_EQUALS_NULL,
+  DESTINATION_BUFFER_NULL,
+  LIST_NULL,
+  INDEX_OUT_OF_BOUNDS
 } GenericLLError;
 
 static char const * const error_message[] = {
   "No error.",
   "Error allocating memory using calloc.",
-  "Data to string function is NULL.",
-  "Data equals function is NULL."
+  "Pointer to `data_to_string` function is NULL.",
+  "Pointer to `data_equals` function is NULL.",
+  "Pointer to destination buffer is NULL.",
+  "Pointer to list is NULL.",
+  "Index out of bounds."
 };
 
 
@@ -256,6 +262,13 @@ GenericLL *generic_ll_create(
   GenericLLError *error
 );
 
+void *generic_ll_get(GenericLL *list, size_t index, GenericLLError *error);
+
+int generic_ll_to_string(
+  char **buffer,
+  GenericLL *list,
+  GenericLLError *error
+);
 
 /* ==========================================================================
  * End of Header guard

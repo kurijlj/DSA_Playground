@@ -108,5 +108,142 @@ GenericLL *generic_ll_create(
   return heap;
 }
 
+void *generic_ll_get(GenericLL *list, size_t index, GenericLLError *error) {
+  *error = NO_ERROR; /* Set error to default value */
+
+  if (NULL == list) {
+    *error = LIST_NULL;
+
+    return NULL;
+  }
+
+  if (index < 0 || index >= list->size) {
+    *error = INDEX_OUT_OF_BOUNDS;
+
+    return NULL;
+  }
+
+  GenericLLNode *current = list->head;
+  for (size_t i = 0; i < index; i++) {
+    current = current->next;
+  }
+
+  return current->data;
+}
+
+int generic_ll_to_string(
+    char **buffer,
+    GenericLL *list,
+    GenericLLError *error
+  ) {
+  *error = NO_ERROR; /* Set error to default value */
+  int size = 0;  /* We return zero if there is an error */
+
+  /* We can't do anything if the list is NULL ... */
+  if (NULL == list) {
+    *error = LIST_NULL;
+
+    return size;
+  }
+
+  /* ... or if the buffer is NULL */
+  if (NULL == *buffer) {
+    *error = DESTINATION_BUFFER_NULL;
+
+    return size;
+  }
+
+  /* First we need to calculate the size of the buffer */
+  GenericLLNode *current = list->head;
+  char *data_str = NULL;
+
+  size += 10; /* "GenericLL(" */
+  for(size_t i = 0; 3 > i && list->size > i; i++) {
+    int data_str_size = list->data_to_string(
+      &data_str,
+      generic_ll_get(list, i, NULL),
+      error
+    );
+
+    if (data_str_size <= 0) {
+      size = 0;
+      return size;
+    }
+
+    size += data_str_size;
+    free(data_str);
+    data_str = NULL;
+
+    if (list->size - 1 != i) {
+      size += 2; /* ", " */
+    }
+  }
+
+  if (3 < list->size) {
+    if (5 > list->size) {
+      int data_str_size = list->data_to_string(
+        &data_str,
+        generic_ll_get(list, 3, NULL),
+        error
+      );
+
+      if (data_str_size <= 0) {
+        size = 0;
+        return size;
+      }
+
+      size += data_str_size;
+      free(data_str);
+      data_str = NULL;
+    } else if (8 > list->size) {
+      for(size_t i = 3; list->size > i; i++) {
+        int data_str_size = list->data_to_string(
+          &data_str,
+          generic_ll_get(list, i, NULL),
+          error
+        );
+
+        if (data_str_size <= 0) {
+          size = 0;
+          return size;
+        }
+
+        size += data_str_size;
+        free(data_str);
+        data_str = NULL;
+
+        if(list->size - 1 != i) {
+          size += 2; /* ", " */
+        }
+      }
+    } else {
+      size += 5; /* "..., " */
+      for(size_t i = list->size - 3; list->size > i; i++) {
+        int data_str_size = list->data_to_string(
+          &data_str,
+          generic_ll_get(list, i, NULL),
+          error
+        );
+
+        if (data_str_size <= 0) {
+          size = 0;
+          return size;
+        }
+
+        size += data_str_size;
+        free(data_str);
+        data_str = NULL;
+
+        if(list->size - 1 != i) {
+          size += 2; /* ", " */
+        }
+      }
+    }
+  }
+
+  size += 2; /* ")" */
+
+  return size;
+}
 
 /* End of generic_Linked_list.c */
