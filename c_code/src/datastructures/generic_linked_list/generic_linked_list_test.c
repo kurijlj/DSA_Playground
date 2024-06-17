@@ -126,27 +126,74 @@ int main(int argc, char **argv) {
   }
 
   /* Main module code */
-  int status = EXIT_SUCCESS;
-
   if (argc == 0) {
     /* No arguments were given */
-    int data = 42;
-    char *buffer = NULL;
-    GenericLLError error = NO_ERROR;
+    int data = 42;  /* Data to be stored in the node */
+    char *buffer = NULL;  /* Buffer to store the string representation
+                             of the data */
+    GenericLLError error = NO_ERROR;  /* Error code */
+
+    /* Print start message -------------------------------------------------- */
     printf("%s> Program execution started!\n", APP_NAME);
+
+    /* Create a node and check if it was created successfully */
     GenericLLNode *node = generic_ll_create_node(&data, &error);
     if (NO_ERROR != error) {
       fprintf(stderr, "%s> ERROR: %s\n", APP_NAME, error_message[error]);
-      status = EXIT_FAILURE;
-    } else {
-      int_to_string(&buffer, node->data, &error);
-      if (NO_ERROR != error) {
-        fprintf(stderr, "%s> ERROR: %s\n", APP_NAME, error_message[error]);
-        status = EXIT_FAILURE;
-      } else {
-        printf("%s> Data=%s\n", APP_NAME, buffer);
-      }
+      exit(EXIT_FAILURE);
     }
+
+    /* Generate string representation of the data and print it */
+    int_to_string(&buffer, node->data, &error);
+    if (NO_ERROR != error) {
+      fprintf(stderr, "%s> ERROR: %s\n", APP_NAME, error_message[error]);
+      exit(EXIT_FAILURE);
+    }
+    printf("%s> Data=%s\n", APP_NAME, buffer);
+
+    /* Free the buffer */
+    free(buffer);
+    buffer = NULL;
+
+    /* Create a linked list and check if it was created successfully */
+    GenericLL *list = generic_ll_create(int_to_string, data_equals, NULL, NULL,
+      NULL, NULL, &error);
+    if (NO_ERROR != error) {
+      fprintf(stderr, "%s> ERROR: %s\n", APP_NAME, error_message[error]);
+      exit(EXIT_FAILURE);
+    }
+
+    /* Generate string representation of the empty linked list and print it */
+    bool cmpr = strlen("GenericLL(None)")
+      == generic_ll_to_string(&buffer, list, &error) - 1;
+    printf(
+      "%s> `GenericLL(None)`: %s\n",
+      APP_NAME,
+      cmpr ? "PASS" : "FAIL"
+    );
+
+    /* Free the buffer */
+    free(buffer);
+    buffer = NULL;
+
+    /* Add the node to the linked list */
+    list->head = node;
+    list->tail = node;
+    list->size = 1;
+
+    /* Generate string representation of the linked list and print it */
+    cmpr = strlen("GenericLL(42)")
+      == generic_ll_to_string(&buffer, list, &error) - 1;
+    printf(
+      "%s> `GenericLL(42)`: %s\n",
+      APP_NAME,
+      cmpr ? "PASS" : "FAIL"
+    );
+    }
+
+    /* Free the buffer */
+    free(buffer);
+    buffer = NULL;
 
     if (NULL != buffer) {
       free(buffer);
@@ -156,7 +203,6 @@ int main(int argc, char **argv) {
     }
     /* End of main module code. Print exit message -------------------------- */
     printf("%s> Program execution complete!\n", APP_NAME);
-  }
 
   return status;
 }
@@ -216,7 +262,7 @@ int version_info(struct argparse *self, const struct argparse_option *option) {
  * ========================================================================== */
 
 int int_to_string(char **buffer, void *data, GenericLLError *error) {
-  int *int_data = (int *)data;
+  int *int_data = (int *) data;
   int size = snprintf(NULL, 0, "%d", *int_data);
   *buffer = calloc(size + 1, sizeof(char));
   *error = NO_ERROR;

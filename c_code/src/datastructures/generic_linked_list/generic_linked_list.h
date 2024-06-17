@@ -161,7 +161,7 @@ typedef struct generic_ll {
     GenericLLNode *head;
     GenericLLNode *tail;
     size_t size;
-    int (*data_to_string)(char **buffer, void *data, char const **error);
+    int (*data_to_string)(char **buffer, void *data, GenericLLError *error);
     bool (*data_equals)(void *data1, void *data2);
     bool (*data_less)(void *data1, void *data2);
     bool (*data_greater)(void *data1, void *data2);
@@ -253,7 +253,7 @@ GenericLLNode *generic_ll_create_node(void *data, GenericLLError *error);
   * 
   * ------------------------------------------------------------------------- */
 GenericLL *generic_ll_create(
-  int (*data_to_string)(char **buffer, void *data, char const **error),
+  int (*data_to_string)(char **buffer, void *data, GenericLLError *error),
   bool (*data_equals)(void *data1, void *data2),
   bool (*data_less)(void *data1, void *data2),
   bool (*data_greater)(void *data1, void *data2),
