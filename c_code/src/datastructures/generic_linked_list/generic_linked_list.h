@@ -153,6 +153,10 @@ typedef struct generic_ll_node {
  *                              elements.
  *    *data_greater_or_equal(): Pointer to a function that compares two data
  *                              elements.
+ *    *data_free():             Pointer to a function that frees the data. If
+ *                              the pointer is NULL, the linked list will not
+ *                              free the data, and it is the user's
+ *                              responsibility to free the data.
  * 
  * Methods:
  * 
@@ -169,6 +173,7 @@ typedef struct generic_ll {
     bool (*data_greater)(void *data1, void *data2);
     bool (*data_less_or_equal)(void *data1, void *data2);
     bool (*data_greater_or_equal)(void *data1, void *data2);
+    void (*data_free)(void *data);
 } GenericLL;
 
 
@@ -248,6 +253,7 @@ GenericLLNode *generic_ll_create_node(void *data, GenericLLError *error);
   *    or equal.
   *  - data_greater_or_equal: pointer to a function that compares two data for
   *    greater or equal.
+  *  - data_free: pointer to a function that frees the data.
   *  - error: pointer to GenericLLError to store error code.
   *
   * Returns:
@@ -261,10 +267,17 @@ GenericLL *generic_ll_create(
   bool (*data_greater)(void *data1, void *data2),
   bool (*data_less_or_equal)(void *data1, void *data2),
   bool (*data_greater_or_equal)(void *data1, void *data2),
+  void (*data_free)(void *data),
   GenericLLError *error
 );
 
 void *generic_ll_get(GenericLL *list, size_t index, GenericLLError *error);
+
+GenericLLNode *generic_ll_get_node(
+  GenericLL *list,
+  size_t index,
+  GenericLLError *error
+);
 
 int generic_ll_to_string(
   char **buffer,

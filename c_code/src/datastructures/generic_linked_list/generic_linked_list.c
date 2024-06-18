@@ -75,6 +75,7 @@ GenericLL *generic_ll_create(
     bool (*data_greater)(void *data1, void *data2),
     bool (*data_less_or_equal)(void *data1, void *data2),
     bool (*data_greater_or_equal)(void *data1, void *data2),
+    void (*data_free)(void *data),
     GenericLLError *error
     ) {
   *error = NO_ERROR; /* Set error to default value */
@@ -104,6 +105,7 @@ GenericLL *generic_ll_create(
   heap->data_greater = data_greater;
   heap->data_less_or_equal = data_less_or_equal;
   heap->data_greater_or_equal = data_greater_or_equal;
+  heap->data_free = data_free;
 
   return heap;
 }
@@ -137,6 +139,39 @@ void *generic_ll_get(GenericLL *list, size_t index, GenericLLError *error) {
   return current->data;
 }
 
+GenericLLNode *generic_ll_get_node(
+    GenericLL *list,
+    size_t index,
+    GenericLLError *error
+  ) {
+  *error = NO_ERROR; /* Set error to default value */
+
+  if (NULL == list) {
+    *error = LIST_NULL;
+
+    return NULL;
+  }
+
+  if (0 == list->size) {
+    *error = LIST_EMPTY;
+
+    return NULL;
+  }
+
+  if (index < 0 || index >= list->size) {
+    *error = INDEX_OUT_OF_BOUNDS;
+
+    return NULL;
+  }
+
+  GenericLLNode *current = list->head;
+  for (size_t i = 0; i < index; i++) {
+    current = current->next;
+  }
+
+  return current;
+}
+
 int generic_ll_to_string(
     char **buffer,
     GenericLL *list,
@@ -161,7 +196,6 @@ int generic_ll_to_string(
   }
 
   /* First we need to calculate the size of the buffer */
-  GenericLLNode *current = list->head;
   char *data_str = NULL;
 
   size += 10; /* "GenericLL(" */
