@@ -117,6 +117,12 @@ void *generic_ll_get(GenericLL *list, size_t index, GenericLLError *error) {
     return NULL;
   }
 
+  if (0 == list->size) {
+    *error = LIST_EMPTY;
+
+    return NULL;
+  }
+
   if (index < 0 || index >= list->size) {
     *error = INDEX_OUT_OF_BOUNDS;
 

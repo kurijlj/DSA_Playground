@@ -61,7 +61,8 @@ typedef enum {
   DATA_EQUALS_NULL,
   DESTINATION_BUFFER_NULL,
   LIST_NULL,
-  INDEX_OUT_OF_BOUNDS
+  INDEX_OUT_OF_BOUNDS,
+  LIST_EMPTY
 } GenericLLError;
 
 static char const * const error_message[] = {
@@ -71,7 +72,8 @@ static char const * const error_message[] = {
   "Pointer to `data_equals` function is NULL.",
   "Pointer to destination buffer is NULL.",
   "Pointer to list is NULL.",
-  "Index out of bounds."
+  "Index out of bounds.",
+  "List is empty."
 };
 
 
