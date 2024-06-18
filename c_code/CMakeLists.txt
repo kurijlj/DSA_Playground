@@ -24,6 +24,15 @@ project (
 set (CMAKE_C_STANDARD 99)  # This is so that we can use 'munit' framework
 set (CMAKE_C_STANDARD_REQUIRED ON)
 
+# Set the C flags
+if (MSVC)
+    # Use the highest warning level
+    add_compile_options (/W4 /Zi /MDd)
+else ()
+    # Use the highest warning level
+    add_compile_options (-Wall -Wextra -pedantic)
+endif ()
+
 # Set the build type to Release if not specified
 if (NOT CMAKE_BUILD_TYPE)
     set (CMAKE_BUILD_TYPE Release)
