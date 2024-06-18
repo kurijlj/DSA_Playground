@@ -44,6 +44,7 @@
 
 /* External libraries headers */
 #include <argparse.h>
+#include <munit.h>
 
 
 /* ==========================================================================
@@ -138,17 +139,11 @@ int main(int argc, char **argv) {
 
     /* Create a node and check if it was created successfully */
     GenericLLNode *node = generic_ll_create_node(&data, &error);
-    if (NO_ERROR != error) {
-      fprintf(stderr, "%s> ERROR: %s\n", APP_NAME, error_message[error]);
-      exit(EXIT_FAILURE);
-    }
+    munit_assert_int(NO_ERROR, ==, error);
 
     /* Generate string representation of the data and print it */
     int_to_string(&buffer, node->data, &error);
-    if (NO_ERROR != error) {
-      fprintf(stderr, "%s> ERROR: %s\n", APP_NAME, error_message[error]);
-      exit(EXIT_FAILURE);
-    }
+    munit_assert_int(NO_ERROR, ==, error);
     printf("%s> Data=%s\n", APP_NAME, buffer);
 
     /* Free the buffer */
@@ -158,19 +153,11 @@ int main(int argc, char **argv) {
     /* Create a linked list and check if it was created successfully */
     GenericLL *list = generic_ll_create(int_to_string, data_equals, NULL, NULL,
       NULL, NULL, &error);
-    if (NO_ERROR != error) {
-      fprintf(stderr, "%s> ERROR: %s\n", APP_NAME, error_message[error]);
-      exit(EXIT_FAILURE);
-    }
+    munit_assert_int(NO_ERROR, ==, error);
 
     /* Generate string representation of the empty linked list and print it */
-    bool cmpr = strlen("GenericLL(None)")
-      == generic_ll_to_string(&buffer, list, &error) - 1;
-    printf(
-      "%s> `GenericLL(None)`: %s\n",
-      APP_NAME,
-      cmpr ? "PASS" : "FAIL"
-    );
+    munit_assert_int(strlen("GenericLL(None)"), ==,
+      generic_ll_to_string(&buffer, list, &error) - 1);
 
     /* Free the buffer */
     free(buffer);
@@ -182,14 +169,8 @@ int main(int argc, char **argv) {
     list->size = 1;
 
     /* Generate string representation of the linked list and print it */
-    cmpr = strlen("GenericLL(42)")
-      == generic_ll_to_string(&buffer, list, &error) - 1;
-    printf(
-      "%s> `GenericLL(42)`: %s\n",
-      APP_NAME,
-      cmpr ? "PASS" : "FAIL"
-    );
-    }
+    munit_assert_int(strlen("GenericLL(42)"), ==,
+      generic_ll_to_string(&buffer, list, &error) - 1);
 
     /* Free the buffer */
     free(buffer);
@@ -203,8 +184,9 @@ int main(int argc, char **argv) {
     }
     /* End of main module code. Print exit message -------------------------- */
     printf("%s> Program execution complete!\n", APP_NAME);
+  }
 
-  return status;
+  return EXIT_SUCCESS;
 }
 
 /* ==========================================================================

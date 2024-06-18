@@ -27,9 +27,11 @@ add_executable(generic_linked_list_test
 # Link the `invalid_frees` target with the required libraries
 target_link_libraries(generic_linked_list_test PRIVATE
     argparse
+    munit
 )
 
 # Include the required directories for the `invalid_frees` target
 target_include_directories(generic_linked_list_test PRIVATE
     ${ARGPARSE_INCLUDE_DIR}
+    ${MUNIT_INCLUDE_DIR}
 )

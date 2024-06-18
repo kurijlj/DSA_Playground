@@ -1,3 +1,6 @@
 [submodule "c_code/extern/argparse"]
 	path = c_code/extern/argparse
 	url = https://github.com/cofyc/argparse.git
+[submodule "c_code/extern/munit"]
+	path = c_code/extern/munit
+	url = https://github.com/nemequ/munit.git
