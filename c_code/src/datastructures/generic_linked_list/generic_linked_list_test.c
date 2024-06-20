@@ -129,7 +129,7 @@ int main(int argc, char **argv) {
   /* Main module code */
   if (argc == 0) {
     /* No arguments were given */
-    int data = 42;  /* Data to be stored in the node */
+    int *data = NULL;  /* Data to be stored in the node */
     char *buffer = NULL;  /* Buffer to store the string representation
                              of the data */
     GenericLLError error = NO_ERROR;  /* Error code */
@@ -137,22 +137,9 @@ int main(int argc, char **argv) {
     /* Print start message -------------------------------------------------- */
     printf("%s> Program execution started!\n", APP_NAME);
 
-    /* Create a node and check if it was created successfully */
-    GenericLLNode *node = generic_ll_create_node(&data, &error);
-    munit_assert_int(NO_ERROR, ==, error);
-
-    /* Generate string representation of the data and print it */
-    int_to_string(&buffer, node->data, &error);
-    munit_assert_int(NO_ERROR, ==, error);
-    printf("%s> Data=%s\n", APP_NAME, buffer);
-
-    /* Free the buffer */
-    free(buffer);
-    buffer = NULL;
-
     /* Create a linked list and check if it was created successfully */
     GenericLL *list = generic_ll_create(int_to_string, data_equals, NULL, NULL,
-      NULL, NULL, NULL, &error);
+      NULL, NULL, free, &error);
     munit_assert_int(NO_ERROR, ==, error);
 
     /* Test 'generic_ll_get' function on an empty linked list */
@@ -172,16 +159,13 @@ int main(int argc, char **argv) {
     buffer = NULL;
 
     /* Add the node to the linked list */
-    list->head = node;
-    list->tail = node;
-    list->size = 1;
-
-    /* Test 'generic_ll_get_node' function on a non-empty linked list */
-    munit_assert_ptr(node, ==, generic_ll_get_node(list, 0, &error));
+    data = malloc(sizeof(int));
+    *data = 42;
+    munit_assert_ptr_equal(list, generic_ll_push_front(list, data, &error));
     munit_assert_int(NO_ERROR, ==, error);
 
     /* Test 'generic_ll_get' function on a non-empty linked list */
-    munit_assert_int(data, ==, *(int *)generic_ll_get(list, 0, &error));
+    munit_assert_int(*data, ==, *(int *)generic_ll_get(list, 0, &error));
     munit_assert_int(NO_ERROR, ==, error);
     munit_assert_null(generic_ll_get(list, 42, &error));
     munit_assert_int(INDEX_OUT_OF_BOUNDS, ==, error);
@@ -190,6 +174,110 @@ int main(int argc, char **argv) {
     munit_assert_size(strlen("GenericLL(42)"), ==,
       (size_t) generic_ll_to_string(&buffer, list, &error) - 1);
 
+    /* Add another node to the linked list */
+    data = malloc(sizeof(int));
+    *data = -356;
+    munit_assert_ptr_equal(list, generic_ll_push_front(list, data, &error));
+    munit_assert_int(NO_ERROR, ==, error);
+
+    /* Test 'generic_ll_get' function on a non-empty linked list */
+    munit_assert_int(*data, ==, *(int *)generic_ll_get(list, 0, &error));
+    munit_assert_int(NO_ERROR, ==, error);
+
+    /* Generate string representation of the linked list and print it */
+    munit_assert_size(strlen("GenericLL(-356, 42)"), ==,
+      (size_t) generic_ll_to_string(&buffer, list, &error) - 1);
+
+    /* Add yet another node to the linked list */
+    data = malloc(sizeof(int));
+    *data = 0;
+    munit_assert_ptr_equal(list, generic_ll_push_front(list, data, &error));
+    munit_assert_int(NO_ERROR, ==, error);
+
+    /* Test 'generic_ll_get' function on a non-empty linked list */
+    munit_assert_int(*data, ==, *(int *)generic_ll_get(list, 0, &error));
+    munit_assert_int(NO_ERROR, ==, error);
+
+    /* Generate string representation of the linked list and print it */
+    munit_assert_size(strlen("GenericLL(0, -356, 42)"), ==,
+      (size_t) generic_ll_to_string(&buffer, list, &error) - 1);
+
+    /* Keep adding nodes to the linked list */
+
+    /* Add 4th node to the linked list ... */
+    data = malloc(sizeof(int));
+    *data = 1024;
+    munit_assert_ptr_equal(list, generic_ll_push_front(list, data, &error));
+    munit_assert_int(NO_ERROR, ==, error);
+
+    /* Test 'generic_ll_get' function on a non-empty linked list */
+    munit_assert_int(*data, ==, *(int *)generic_ll_get(list, 0, &error));
+    munit_assert_int(NO_ERROR, ==, error);
+
+    /* Generate string representation of the linked list and print it */
+    munit_assert_size(strlen("GenericLL(1024, 0, -356, 42)"), ==,
+      (size_t) generic_ll_to_string(&buffer, list, &error) - 1);
+
+    /* Add 5th node to the linked list ... */
+    data = malloc(sizeof(int));
+    *data = -2048;
+    munit_assert_ptr_equal(list, generic_ll_push_front(list, data, &error));
+    munit_assert_int(NO_ERROR, ==, error);
+
+    /* Test 'generic_ll_get' function on a non-empty linked list */
+    munit_assert_int(*data, ==, *(int *)generic_ll_get(list, 0, &error));
+    munit_assert_int(NO_ERROR, ==, error);
+
+    /* Generate string representation of the linked list and print it */
+    munit_assert_size(strlen("GenericLL(-2048, 1024, 0, -356, 42)"), ==,
+      (size_t) generic_ll_to_string(&buffer, list, &error) - 1);
+
+    /* Add 6th node to the linked list */
+    data = malloc(sizeof(int));
+    *data = 11;
+    munit_assert_ptr_equal(list, generic_ll_push_front(list, data, &error));
+    munit_assert_int(NO_ERROR, ==, error);
+
+    /* Test 'generic_ll_get' function on a non-empty linked list */
+    munit_assert_int(*data, ==, *(int *)generic_ll_get(list, 0, &error));
+    munit_assert_int(NO_ERROR, ==, error);
+
+    /* Generate string representation of the linked list and print it */
+    munit_assert_size(strlen("GenericLL(11, -2048, 1024, 0, -356, 42)"), ==,
+      (size_t) generic_ll_to_string(&buffer, list, &error) - 1);
+
+    /* Add 7th node to the linked list ... */
+    data = malloc(sizeof(int));
+    *data = 100;
+    munit_assert_ptr_equal(list, generic_ll_push_front(list, data, &error));
+    munit_assert_int(NO_ERROR, ==, error);
+
+    /* Test 'generic_ll_get' function on a non-empty linked list */
+    munit_assert_int(*data, ==, *(int *)generic_ll_get(list, 0, &error));
+    munit_assert_int(NO_ERROR, ==, error);
+
+    /* Generate string representation of the linked list and print it */
+    munit_assert_size(strlen("GenericLL(100, 11, -2048, ..., 0, -356, 42)"), ==,
+      (size_t) generic_ll_to_string(&buffer, list, &error) - 1);
+
+    /* Add 8th node to the linked list ... */
+    data = malloc(sizeof(int));
+    *data = 3;
+    munit_assert_ptr_equal(list, generic_ll_push_front(list, data, &error));
+    munit_assert_int(NO_ERROR, ==, error);
+
+    /* Test 'generic_ll_get' function on a non-empty linked list */
+    munit_assert_int(*data, ==, *(int *)generic_ll_get(list, 0, &error));
+    munit_assert_int(NO_ERROR, ==, error);
+
+    /* Generate string representation of the linked list and print it */
+    munit_assert_size(strlen("GenericLL(3, 100, 11, ..., 0, -356, 42)"), ==,
+      (size_t) generic_ll_to_string(&buffer, list, &error) - 1);
+
+    /* Test pushing a null pointer to data */
+    munit_assert_null(generic_ll_push_front(list, NULL, &error));
+    munit_assert_int(DATA_NULL, ==, error);
+
     /* Free the buffer */
     free(buffer);
     buffer = NULL;
@@ -197,9 +285,11 @@ int main(int argc, char **argv) {
     if (NULL != buffer) {
       free(buffer);
     }
-    if (NULL != node) {
-      free(node);
+    if (NULL != list) {
+      generic_ll_free(list, &error);
+      munit_assert_int(NO_ERROR, ==, error);
     }
+
     /* End of main module code. Print exit message -------------------------- */
     printf("%s> Program execution complete!\n", APP_NAME);
   }

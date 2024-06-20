@@ -60,6 +60,7 @@ typedef enum {
   DATA_TO_STRING_NULL,
   DATA_EQUALS_NULL,
   DESTINATION_BUFFER_NULL,
+  DATA_NULL,
   LIST_NULL,
   INDEX_OUT_OF_BOUNDS,
   LIST_EMPTY
@@ -71,6 +72,7 @@ static char const * const error_message[] = {
   "Pointer to `data_to_string` function is NULL.",
   "Pointer to `data_equals` function is NULL.",
   "Pointer to destination buffer is NULL.",
+  "Pointer to data is NULL.",
   "Pointer to list is NULL.",
   "Index out of bounds.",
   "List is empty."
@@ -270,6 +272,14 @@ GenericLL *generic_ll_create(
   void (*data_free)(void *data),
   GenericLLError *error
 );
+
+GenericLL *generic_ll_push_front(
+  GenericLL *list,
+  void *data,
+  GenericLLError *error
+);
+
+void generic_ll_free(GenericLL *list, GenericLLError *error);
 
 void *generic_ll_get(GenericLL *list, size_t index, GenericLLError *error);
 

@@ -78,23 +78,31 @@ GenericLL *generic_ll_create(
     void (*data_free)(void *data),
     GenericLLError *error
     ) {
-  *error = NO_ERROR; /* Set error to default value */
+  if (NULL != error) {
+    *error = NO_ERROR; /* Set error to default value */
+  }
 
   if (NULL == data_to_string) {
-    *error = DATA_TO_STRING_NULL;
+    if (NULL != error) {
+      *error = DATA_TO_STRING_NULL;
+    }
 
     return NULL;
   }
 
   if (NULL == data_equals) {
-    *error = DATA_EQUALS_NULL;
+    if (NULL != error) {
+      *error = DATA_EQUALS_NULL;
+    }
 
     return NULL;
   }
 
   GenericLL *heap = calloc(1, sizeof(GenericLL));
   if (heap == NULL) {
-    *error = CALLOC_ERROR;
+    if (NULL != error) {
+      *error = CALLOC_ERROR;
+    }
 
     return NULL;
   }
@@ -110,23 +118,106 @@ GenericLL *generic_ll_create(
   return heap;
 }
 
-void *generic_ll_get(GenericLL *list, size_t index, GenericLLError *error) {
-  *error = NO_ERROR; /* Set error to default value */
+GenericLL *generic_ll_push_front(
+    GenericLL *list,
+    void *data,
+    GenericLLError *error
+  ) {
+  if (NULL != error) {
+    *error = NO_ERROR; /* Set error to default value */
+  }
 
   if (NULL == list) {
-    *error = LIST_NULL;
+    if (NULL != error) {
+      *error = LIST_NULL;
+    }
+
+    return NULL;
+  }
+
+  if (NULL == data) {
+    if (NULL != error) {
+      *error = DATA_NULL;
+    }
+
+    return NULL;
+  }
+
+  GenericLLNode *node = generic_ll_create_node(data, error);
+  if (NULL == node) {
+    return NULL;
+  }
+
+  if (0 == list->size) {
+    list->head = node;
+    list->tail = node;
+  } else {
+    node->next = list->head;
+    list->head = node;
+  }
+
+  list->size++;
+
+  return list;
+}
+
+void generic_ll_free(GenericLL *list, GenericLLError *error) {
+  if (NULL != error) {
+    *error = NO_ERROR; /* Set error to default value */
+  }
+
+  if (NULL == list) {
+    if (NULL != error) {
+      *error = LIST_NULL;
+    }
+
+    return;
+  }
+
+  if (0 == list->size) {
+    free(list);
+
+    return;
+  }
+
+  GenericLLNode *current = list->head;
+  while (NULL != current) {
+    GenericLLNode *next = current->next;
+    if (NULL != list->data_free) {
+      list->data_free(current->data);
+    }
+    free(current);
+    current = next;
+  }
+
+  free(list);
+}
+
+void *generic_ll_get(GenericLL *list, size_t index, GenericLLError *error) {
+  if (NULL != error) {
+    *error = NO_ERROR; /* Set error to default value */
+  }
+
+  if (NULL == list) {
+    if (NULL != error) {
+      *error = LIST_NULL;
+    }
 
     return NULL;
   }
 
   if (0 == list->size) {
-    *error = LIST_EMPTY;
+    if (NULL != error) {
+      *error = LIST_EMPTY;
+    }
 
     return NULL;
   }
 
   if (index < 0 || index >= list->size) {
-    *error = INDEX_OUT_OF_BOUNDS;
+    if (NULL != error) {
+      *error = INDEX_OUT_OF_BOUNDS;
+    }
 
     return NULL;
   }
@@ -144,22 +235,30 @@ GenericLLNode *generic_ll_get_node(
     size_t index,
     GenericLLError *error
   ) {
-  *error = NO_ERROR; /* Set error to default value */
+  if (NULL != error) {
+    *error = NO_ERROR; /* Set error to default value */
+  }
 
   if (NULL == list) {
-    *error = LIST_NULL;
+    if (NULL != error) {
+      *error = LIST_NULL;
+    }
 
     return NULL;
   }
 
   if (0 == list->size) {
-    *error = LIST_EMPTY;
+    if (NULL != error) {
+      *error = LIST_EMPTY;
+    }
 
     return NULL;
   }
 
   if (index < 0 || index >= list->size) {
-    *error = INDEX_OUT_OF_BOUNDS;
+    if (NULL != error) {
+      *error = INDEX_OUT_OF_BOUNDS;
+    }
 
     return NULL;
   }
@@ -177,20 +276,25 @@ int generic_ll_to_string(
     GenericLL *list,
     GenericLLError *error
   ) {
-  *error = NO_ERROR; /* Set error to default value */
+  if (NULL != error) {
+    *error = NO_ERROR; /* Set error to default value */
+  }
   int size = 0;  /* We return zero if there is an error */
 
   /* We can't do anything if the list is NULL ... */
   if (NULL == list) {
-    *error = LIST_NULL;
+    if (NULL != error) {
+      *error = LIST_NULL;
+    }
 
     return size;
   }
 
   /* ... or if the buffer is NULL */
   if (NULL == buffer) {
-    printf("generic_ll_to_string> %p\n", buffer);
-    *error = DESTINATION_BUFFER_NULL;
+    if (NULL != error) {
+      *error = DESTINATION_BUFFER_NULL;
+    }
 
     return size;
   }
@@ -205,10 +309,9 @@ int generic_ll_to_string(
   } else {
     /* Calculate the size of the data of the first three or less elements */
     for(size_t i = 0; 3 > i && list->size > i; i++) {
-      void *data = generic_ll_get(list, i, error);
       int data_str_size = list->data_to_string(
         &data_str,
-        data,
+        generic_ll_get(list, i, NULL),
         error
       );
 
@@ -245,7 +348,7 @@ int generic_ll_to_string(
           return size;
         }
 
-        size += data_str_size;
+        size += data_str_size - 1; /* We don't need the last character */
         free(data_str);
         data_str = NULL;
       } else if (8 > list->size) {
@@ -268,7 +371,7 @@ int generic_ll_to_string(
           free(data_str);
           data_str = NULL;
 
-          if(list->size - 1 != i) {
+          if(list->size - 1 > i) {
             size += 2; /* ", " */
           }
         }
@@ -294,7 +397,7 @@ int generic_ll_to_string(
           free(data_str);
           data_str = NULL;
 
-          if(list->size - 1 != i) {
+          if(list->size - 1 > i) {
             size += 2; /* ", " */
           }
         }
