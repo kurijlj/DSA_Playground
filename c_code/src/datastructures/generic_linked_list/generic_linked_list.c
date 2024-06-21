@@ -46,6 +46,54 @@
 
 
 /* ==========================================================================
+  * Internal Declarations Section
+ * ========================================================================== */
+
+/* --------------------------------------------------------------------------
+ * Function: _generic_ll_string_length
+ * --------------------------------------------------------------------------
+ * 
+ * Description: Calculate the size of the string representation of the list.
+ * 
+ *              The string representation of the list is in the following form:
+ * 
+ *                GenericLL(data1, data2, data3, ..., dataN-2, dataN-1, dataN)
+ * 
+ *              where data1, data2, data3, ..., dataN-2, dataN-1, and dataN are
+ *              the string representations of the data of the elements of the
+ *              list. If the list is empty, the string representation is:
+ * 
+ *                GenericLL(None)
+ * 
+ *              If the list has less than eight elements, the string
+ *              representation is in the following form:
+ * 
+ *                GenericLL(data1, data2, data3, data4, data5, data6, data7)
+ * 
+ *              If the list is NULL, the function returns zero and sets the
+ *              error code to LIST_NULL.
+ * 
+ *              If the error is NULL, the function does not set the error.
+ * 
+ *              CAUTION: This function is for internal use only and should not
+ *              be called from outside of the library.
+ * 
+ * Parameters:
+ *  - list: The list for which we calculate the size of the string.
+ *  - error: A pointer to a variable of type GenericLLError, where we store the
+ *           error code if an error occurs.
+ * 
+ * Return: The size of the string representation of the list, or zero if an
+ *         error occurs.
+ * 
+ * -------------------------------------------------------------------------- */
+static int _generic_ll_string_length(
+  GenericLL *list,
+  GenericLLError *error
+);
+
+
+/* ==========================================================================
  * Algorithms Definitions Section
  * ========================================================================== */
 
@@ -132,7 +180,7 @@ GenericLL *generic_ll_push_front(
       *error = LIST_NULL;
     }
 
-    return NULL;
+    return list;
   }
 
   if (NULL == data) {
@@ -140,7 +188,7 @@ GenericLL *generic_ll_push_front(
       *error = DATA_NULL;
     }
 
-    return NULL;
+    return list;
   }
 
   GenericLLNode *node = generic_ll_create_node(data, error);
@@ -193,7 +241,7 @@ void generic_ll_free(GenericLL *list, GenericLLError *error) {
   free(list);
 }
 
-void *generic_ll_get(GenericLL *list, size_t index, GenericLLError *error) {
+void *generic_ll_get_data(GenericLL *list, size_t index, GenericLLError *error) {
   if (NULL != error) {
     *error = NO_ERROR; /* Set error to default value */
   }
@@ -271,6 +319,113 @@ GenericLLNode *generic_ll_get_node(
   return current;
 }
 
+static int _generic_ll_string_length(GenericLL *list, GenericLLError *error) {
+  if (NULL != error) {
+    *error = NO_ERROR; /* Set error to default value */
+  }
+  int size = 0;  /* We return zero if there is an error */
+
+  /* We can't do anything if the list is NULL */
+  if (NULL == list) {
+    if (NULL != error) {
+      *error = LIST_NULL;
+    }
+
+    return size;
+  }
+
+  char *data_str = NULL;  /* Buffer for the string representation of the data */
+
+  size += 10; /* "GenericLL(" */
+
+  if (0 == list->size) {
+    size += 4;  /* "None" */
+  } else {
+    /* Calculate the size of the data of the first three or less elements */
+    for(size_t i = 0; 3 > i && list->size > i; i++) {
+      int data_str_size = list->data_to_string(
+        &data_str,
+        generic_ll_get_data(list, i, NULL),
+        error
+      );
+
+      if (data_str_size <= 0) {
+        size = 0;
+        return size;
+      }
+
+      size += data_str_size;
+      free(data_str);
+      data_str = NULL;
+
+      if (list->size - 1 != i) {
+        size += 2; /* ", " */
+      }
+    }
+
+    /* Calculate the size of the data of rest of the elements, if there are 
+       more than three
+    */
+    if (3 < list->size) {
+      if (8 > list->size) {
+        /* Calculate the size of the data of the rest of the elements, if list 
+           has up to seven elements
+        */
+        for(size_t i = 3; list->size > i; i++) {
+          int data_str_size = list->data_to_string(
+            &data_str,
+            generic_ll_get_data(list, i, NULL),
+            error
+          );
+
+          if (data_str_size <= 0) {
+            size = 0;
+            return size;
+          }
+
+          size += data_str_size;
+          free(data_str);
+          data_str = NULL;
+
+          if(list->size - 1 > i) {
+            size += 2; /* ", " */
+          }
+        }
+      } else {
+        /* Calculate the size of the data of the last three elements, if list 
+           has more than seven elements. We use three dots to indicate that
+           there are more elements
+        */
+        size += 5; /* "..., " */
+        for(size_t i = list->size - 3; list->size > i; i++) {
+          int data_str_size = list->data_to_string(
+            &data_str,
+            generic_ll_get_data(list, i, NULL),
+            error
+          );
+
+          if (data_str_size <= 0) {
+            size = 0;
+            return size;
+          }
+
+          size += data_str_size;
+          free(data_str);
+          data_str = NULL;
+
+          if(list->size - 1 > i) {
+            size += 2; /* ", " */
+          }
+        }
+      }
+    }
+  }
+
+  size += 2; /* ")" */
+
+  return size;
+}
+
 int generic_ll_to_string(
     char **buffer,
     GenericLL *list,
@@ -300,112 +455,117 @@ int generic_ll_to_string(
   }
 
   /* First we need to calculate the size of the buffer */
-  char *data_str = NULL;
+  size = _generic_ll_string_length(list, error);
 
-  size += 10; /* "GenericLL(" */
+  if (size <= 0) {
+    return size;
+  }
+
+  /* Allocate memory for the buffer */
+  *buffer = calloc(size, sizeof(char));
+  if (NULL == *buffer) {
+    if (NULL != error) {
+      *error = CALLOC_ERROR;
+    }
+
+    return 0;
+  }
+
+  /* Copy the string representation of the list to the buffer */
+  int offset = 0;
+  offset += sprintf(*buffer + offset, "GenericLL(");
 
   if (0 == list->size) {
-    size += 4;  /* "None" */
+    offset += sprintf(*buffer + offset, "None");
   } else {
-    /* Calculate the size of the data of the first three or less elements */
+    char *data_str = NULL;  /* Buffer for the string representation of the data */
+
+    /* Copy the string representation of the data of the first three or less 
+       elements
+    */
     for(size_t i = 0; 3 > i && list->size > i; i++) {
       int data_str_size = list->data_to_string(
         &data_str,
-        generic_ll_get(list, i, NULL),
+        generic_ll_get_data(list, i, NULL),
         error
       );
 
       if (data_str_size <= 0) {
-        size = 0;
-        return size;
+        free(*buffer);
+        *buffer = NULL;
+        return 0;
       }
 
-      size += data_str_size;
+      offset += sprintf(*buffer + offset, "%s", data_str);
       free(data_str);
       data_str = NULL;
 
       if (list->size - 1 != i) {
-        size += 2; /* ", " */
+        offset += sprintf(*buffer + offset, ", ");
       }
     }
 
-    /* Calculate the size of the data of rest of the elements, if there are 
-       more than three
+    /* Copy the string representation of the data of rest of the elements, if 
+       there are more than three
     */
     if (3 < list->size) {
-      if (5 > list->size) {
-        /* Calculate the size of the data of the fourth element, if list has 
-           only four elements
-        */
-        int data_str_size = list->data_to_string(
-          &data_str,
-          generic_ll_get(list, 3, NULL),
-          error
-        );
-
-        if (data_str_size <= 0) {
-          size = 0;
-          return size;
-        }
-
-        size += data_str_size - 1; /* We don't need the last character */
-        free(data_str);
-        data_str = NULL;
-      } else if (8 > list->size) {
-        /* Calculate the size of the data of the rest of the elements, if list 
-           has up to seven elements
+      if (8 > list->size) {
+        /* Copy the string representation of the data of the rest of the 
+           elements, if list has up to seven elements
         */
         for(size_t i = 3; list->size > i; i++) {
           int data_str_size = list->data_to_string(
             &data_str,
-            generic_ll_get(list, i, NULL),
+            generic_ll_get_data(list, i, NULL),
             error
           );
 
           if (data_str_size <= 0) {
-            size = 0;
-            return size;
+            free(*buffer);
+            *buffer = NULL;
+            return 0;
           }
 
-          size += data_str_size;
+          offset += sprintf(*buffer + offset, "%s", data_str);
           free(data_str);
           data_str = NULL;
 
           if(list->size - 1 > i) {
-            size += 2; /* ", " */
+            offset += sprintf(*buffer + offset, ", ");
           }
         }
       } else {
-        /* Calculate the size of the data of the last three elements, if list 
-           has more than seven elements. We use three dots to indicate that
-           there are more elements
+        /* Copy the string representation of the data of the last three 
+           elements, if list has more than seven elements. We use three dots to 
+           indicate that there are more elements
         */
-        size += 5; /* "..., " */
+        offset += sprintf(*buffer + offset, "..., ");
         for(size_t i = list->size - 3; list->size > i; i++) {
           int data_str_size = list->data_to_string(
             &data_str,
-            generic_ll_get(list, i, NULL),
+            generic_ll_get_data(list, i, NULL),
             error
           );
 
           if (data_str_size <= 0) {
-            size = 0;
-            return size;
+            free(*buffer);
+            *buffer = NULL;
+            return 0;
           }
 
-          size += data_str_size;
+          offset += sprintf(*buffer + offset, "%s", data_str);
           free(data_str);
           data_str = NULL;
 
           if(list->size - 1 > i) {
-            size += 2; /* ", " */
+            offset += sprintf(*buffer + offset, ", ");
           }
         }
       }
     }
   }
 
-  size += 2; /* ")" */
+  offset += sprintf(*buffer + offset, ")");
 
   return size;
 }

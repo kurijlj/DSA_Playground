@@ -213,9 +213,9 @@ typedef struct generic_ll {
  * -------------------------------------------------------------------------- */
 GenericLLNode *generic_ll_create_node(void *data, GenericLLError *error);
 
-/* -------------------------------------------------------------------------
+/* --------------------------------------------------------------------------   
   * Function: generic_ll_create
-  * -------------------------------------------------------------------------
+  * -------------------------------------------------------------------------   
   * 
   * Description: Create a generic linked list.
   * 
@@ -273,22 +273,182 @@ GenericLL *generic_ll_create(
   GenericLLError *error
 );
 
+/* --------------------------------------------------------------------------
+ * Function: generic_ll_push_front
+ * --------------------------------------------------------------------------
+ * 
+ * Description: Add an element to the front of the list.
+ * 
+ *              If the list is NULL, the function returns NULL and sets the
+ *              error code to LIST_NULL.
+ * 
+ *              If the data is NULL, the function returns NULL and sets the
+ *              error code to DATA_NULL.
+ * 
+ *              If the memory allocation for the new node fails, the function
+ *              returns NULL and sets the error code to CALLOC_ERROR.
+ * 
+ *              If the error is NULL, the function does not set the error.
+ * 
+ * Complexity: O(1)
+ * 
+ * Parameters:
+ *  - list: The list to which we add the element.
+ *  - data: The data of the new element.
+ *  - error: A pointer to a variable of type GenericLLError, where we store the
+ *           error code if an error occurs.
+ * 
+ * Return: The list with the new element added to the front, or original list
+ *         if an error occurs.
+ * 
+ * -------------------------------------------------------------------------- */
 GenericLL *generic_ll_push_front(
   GenericLL *list,
   void *data,
   GenericLLError *error
 );
 
+/* --------------------------------------------------------------------------
+ * Function: generic_ll_free
+ * --------------------------------------------------------------------------
+ * 
+ * Description: Free the memory allocated for the list and its elements.
+ * 
+ *              If the list is NULL, the function does nothing and sets the
+ *              error code to LIST_NULL.
+ * 
+ *              If the list is empty, the function frees the memory allocated
+ *              for the list data structure and sets the error code to NO_ERROR.
+ * 
+ *              If the list is not empty, the function frees the memory
+ *              allocated for the list data structure and its nodes, and sets
+ *              the error code to NO_ERROR. If the data_free function is not
+ *              NULL, the function calls it for each element of the list.
+ * 
+ *              If the error is NULL, the function does not set the error.
+ * 
+ * Complexity: O(n)
+ * 
+ * Parameters:
+ *  - list: The list to free.
+ *  - error: A pointer to a variable of type GenericLLError, where we store the
+ *           error code if an error occurs.
+ * 
+ * Return: void
+ * 
+ * -------------------------------------------------------------------------- */
 void generic_ll_free(GenericLL *list, GenericLLError *error);
 
-void *generic_ll_get(GenericLL *list, size_t index, GenericLLError *error);
+/* --------------------------------------------------------------------------   
+ * Function: generic_ll_get_data
+ * --------------------------------------------------------------------------   
+ * 
+ * Description: Retrieve the data stored in the node at the specified index.
+ * 
+ *              If the list is NULL, the function returns NULL and sets the
+ *              error to LIST_NULL.
+ * 
+ *              If the list is empty, the function returns NULL and sets the
+ *              error to LIST_EMPTY.
+ * 
+ *              If the index is less than 0 or greater than or equal to the size
+ *              of the list, the function returns NULL and sets the error to
+ *              INDEX_OUT_OF_BOUNDS. If the index is valid, the function returns
+ *              the data stored in the node at the specified index.
+ * 
+ *              If the error is NULL, the function does not set the error.
+ * 
+ * Complexity: O(n)
+ * 
+ * Parameters:
+ *  - list: pointer to the linked list.
+ *  - index: index of the element for which to get the data.
+ *  - error: pointer to GenericLLError to store error code.
+ * 
+ * Returns:
+ *  - void *: pointer to the data stored in the first element, or NULL if the
+ *            list is NULL, empty, or the index is out of bounds.
+ * 
+ * -------------------------------------------------------------------------- */
+void *generic_ll_get_data(GenericLL *list, size_t index, GenericLLError *error);
 
+/* --------------------------------------------------------------------------
+ * Function: generic_ll_get_node
+ * --------------------------------------------------------------------------
+ * 
+ * Description: Returns the node at the specified index in the list.
+ * 
+ *              If the list is NULL, the function returns NULL and sets the
+ *              error to LIST_NULL.
+ * 
+ *              If the list is empty, the function returns NULL and sets the
+ *              error to LIST_EMPTY.
+ * 
+ *              If the index is less than 0 or greater than or equal to the size
+ *              of the list, the function returns NULL and sets the error to
+ *              INDEX_OUT_OF_BOUNDS. If the index is valid, the function returns
+ *              the data stored in the node at the specified index.
+ * 
+ *              If the error is NULL, the function does not set the error.
+ * 
+ * Complexity: O(n)
+ * 
+ * Parameters:
+ *  - list: The list from which to get the node.
+ *  - index: The index of the node to get.
+ *  - error: A pointer to a variable of type GenericLLError to store the error
+ *           code.
+ * 
+ * Returns:
+ *  - The node at the specified index in the list, or NULL if an error occurs.
+ * 
+ * -------------------------------------------------------------------------- */
 GenericLLNode *generic_ll_get_node(
   GenericLL *list,
   size_t index,
   GenericLLError *error
 );
 
+/* --------------------------------------------------------------------------
+ * Function: generic_ll_to_string
+ * --------------------------------------------------------------------------
+ * 
+ * Description: Generate a string representation of the list.
+ * 
+ *              The string representation of the list is in the following form:
+ * 
+ *                GenericLL(data1, data2, data3, ..., dataN-2, dataN-1, dataN)
+ * 
+ *              where data1, data2, data3, ..., dataN-2, dataN-1, and dataN are
+ *              the string representations of the data of the elements of the
+ *              list. If the list is empty, the string representation is:
+ * 
+ *                GenericLL(None)
+ * 
+ *              If the list has less than eight elements, the string
+ *              representation is in the following form:
+ * 
+ *                GenericLL(data1, data2, data3, data4, data5, data6, data7)
+ * 
+ *              If the list is NULL, the function returns zero and sets the
+ *              error code to LIST_NULL.
+ * 
+ *              If the buffer is NULL, the function returns zero and sets the
+ *              error code to DESTINATION_BUFFER_NULL.
+ * 
+ *              If the error is NULL, the function does not set the error.
+ * 
+ * Parameters:
+ *  - buffer: A pointer to a pointer to a char, where we store the string
+ *            representation of the list.
+ *  - list: The list for which we generate the string representation.
+ *  - error: A pointer to a variable of type GenericLLError, where we store the
+ *           error code if an error occurs.
+ * 
+ * Return: The size of the string representation of the list, or zero if an
+ *         error occurs.
+ * 
+ * -------------------------------------------------------------------------- */
 int generic_ll_to_string(
   char **buffer,
   GenericLL *list,
