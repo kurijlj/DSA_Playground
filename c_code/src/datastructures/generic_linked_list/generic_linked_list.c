@@ -193,7 +193,7 @@ GenericLL *generic_ll_push_front(
 
   GenericLLNode *node = generic_ll_create_node(data, error);
   if (NULL == node) {
-    return NULL;
+    return list;
   }
 
   if (0 == list->size) {
@@ -205,6 +205,192 @@ GenericLL *generic_ll_push_front(
   }
 
   list->size++;
+
+  return list;
+}
+
+GenericLL *generic_ll_push_back(
+    GenericLL *list,
+    void *data,
+    GenericLLError *error
+  ) {
+  if (NULL != error) {
+    *error = NO_ERROR; /* Set error to default value */
+  }
+
+  if (NULL == list) {
+    if (NULL != error) {
+      *error = LIST_NULL;
+    }
+
+    return list;
+  }
+
+  if (NULL == data) {
+    if (NULL != error) {
+      *error = DATA_NULL;
+    }
+
+    return list;
+  }
+
+  GenericLLNode *node = generic_ll_create_node(data, error);
+  if (NULL == node) {
+    return list;
+  }
+
+  if (0 == list->size) {
+    list->head = node;
+    list->tail = node;
+  } else {
+    list->tail->next = node;
+    list->tail = node;
+  }
+
+  list->size++;
+
+  return list;
+}
+
+void *generic_ll_pop_front(GenericLL *list, GenericLLError *error) {
+  if (NULL != error) {
+    *error = NO_ERROR; /* Set error to default value */
+  }
+
+  if (NULL == list) {
+    if (NULL != error) {
+      *error = LIST_NULL;
+    }
+
+    return NULL;
+  }
+
+  if (0 == list->size) {
+    if (NULL != error) {
+      *error = LIST_EMPTY;
+    }
+
+    return NULL;
+  }
+
+  GenericLLNode *node = list->head;
+  if (1 == list->size) {
+    list->head = NULL;
+    list->tail = NULL;
+  } else {
+    list->head = list->head->next;
+  }
+  list->size--;
+
+  void *data = node->data;
+  free(node);
+  return data;
+}
+
+GenericLL *generic_ll_delete_at_front(GenericLL *list, GenericLLError *error) {
+  if (NULL != error) {
+    *error = NO_ERROR; /* Set error to default value */
+  }
+
+  if (NULL == list) {
+    if (NULL != error) {
+      *error = LIST_NULL;
+    }
+
+    return list;
+  }
+
+  if (0 == list->size) {
+    if (NULL != error) {
+      *error = LIST_EMPTY;
+    }
+
+    return list;
+  }
+
+  void *data = generic_ll_pop_front(list, error);
+  if (NULL == data) {
+    return list;
+  }
+
+  if (NULL != list->data_free) {
+    list->data_free(data);
+  }
+
+  return list;
+}
+
+void *generic_ll_pop_back(GenericLL *list, GenericLLError *error) {
+  if (NULL != error) {
+    *error = NO_ERROR; /* Set error to default value */
+  }
+
+  if (NULL == list) {
+    if (NULL != error) {
+      *error = LIST_NULL;
+    }
+
+    return NULL;
+  }
+
+  if (0 == list->size) {
+    if (NULL != error) {
+      *error = LIST_EMPTY;
+    }
+
+    return NULL;
+  }
+
+  GenericLLNode *node = list->tail;
+  if (1 == list->size) {
+    list->head = NULL;
+    list->tail = NULL;
+  } else {
+    GenericLLNode *current = list->head;
+    while (current->next != list->tail) {
+      current = current->next;
+    }
+
+    list->tail = current;
+    list->tail->next = NULL;
+  }
+
+  list->size--;
+
+  void *data = node->data;
+  free(node);
+  return data;
+}
+
+GenericLL *generic_ll_delete_at_back(GenericLL *list, GenericLLError *error) {
+  if (NULL != error) {
+    *error = NO_ERROR; /* Set error to default value */
+  }
+
+  if (NULL == list) {
+    if (NULL != error) {
+      *error = LIST_NULL;
+    }
+
+    return list;
+  }
+
+  if (0 == list->size) {
+    if (NULL != error) {
+      *error = LIST_EMPTY;
+    }
+
+    return list;
+  }
+
+  void *data = generic_ll_pop_back(list, error);
+  if (NULL == data) {
+    return list;
+  }
+
+  if (NULL != list->data_free) {
+    list->data_free(data);
+  }
 
   return list;
 }
@@ -239,6 +425,151 @@ void generic_ll_free(GenericLL *list, GenericLLError *error) {
   }
 
   free(list);
+}
+
+bool generic_ll_is_empty(GenericLL *list, GenericLLError *error) {
+  if (NULL != error) {
+    *error = NO_ERROR; /* Set error to default value */
+  }
+
+  if (NULL == list) {
+    if (NULL != error) {
+      *error = LIST_NULL;
+    }
+
+    return false;
+  }
+
+  return 0 == list->size;
+}
+
+size_t generic_ll_size(GenericLL *list, GenericLLError *error) {
+  if (NULL != error) {
+    *error = NO_ERROR; /* Set error to default value */
+  }
+
+  if (NULL == list) {
+    if (NULL != error) {
+      *error = LIST_NULL;
+    }
+
+    return 0;
+  }
+
+  return list->size;
+}
+
+bool generic_ll_contains(
+    GenericLL *list,
+    void *data,
+    GenericLLError *error
+  ) {
+  if (NULL != error) {
+    *error = NO_ERROR; /* Set error to default value */
+  }
+
+  if (NULL == list) {
+    if (NULL != error) {
+      *error = LIST_NULL;
+    }
+
+    return false;
+  }
+
+  if (NULL == data) {
+    if (NULL != error) {
+      *error = DATA_NULL;
+    }
+
+    return false;
+  }
+
+  GenericLLNode *current = list->head;
+  while (NULL != current) {
+    if (list->data_equals(data, current->data)) {
+      return true;
+    }
+
+    current = current->next;
+  }
+
+  return false;
+}
+
+/* --------------------------------------------------------------------------
+ * Function: generic_ll_count_occurrences
+ * --------------------------------------------------------------------------
+ * 
+ * Description: Count the number of occurrences of the data in the list.
+ * 
+ *              If the list is NULL, the function returns zero and sets the
+ *              error code to LIST_NULL.
+ * 
+ *              If the data is NULL, the function returns zero and sets the
+ *              error code to DATA_NULL.
+ * 
+ *              If the list is empty, the function returns zero and sets the
+ *              error code to LIST_EMPTY.
+ * 
+ *              If the error is NULL, the function does not set the error.
+ * 
+ * Parameters:
+ *  - list: The list in which we count the occurrences of the data.
+ *  - data: The data for which we count the occurrences.
+ *  - error: A pointer to a variable of type GenericLLError, where we store the
+ *           error code if an error occurs.
+ * 
+ * Return: The number of occurrences of the data in the list, or zero if an
+ *         error occurs, or if the occurrence count is zero.
+ * 
+ * -------------------------------------------------------------------------- */
+size_t generic_ll_count_occurrences(
+    GenericLL *list,
+    void *data,
+    GenericLLError *error
+  ) {
+  if (NULL != error) {
+    *error = NO_ERROR; /* Set error to default value */
+  }
+
+  size_t count = 0;  /* We return zero if there is an error, or if the
+                        occurrence count is zero.
+                     */
+
+  if (NULL == list) {
+    if (NULL != error) {
+      *error = LIST_NULL;
+    }
+
+    return count;
+  }
+
+  if (NULL == data) {
+    if (NULL != error) {
+      *error = DATA_NULL;
+    }
+
+    return count;
+  }
+
+  if (0 == list->size) {
+    if (NULL != error) {
+      *error = LIST_EMPTY;
+    }
+
+    return count;
+  }
+
+  GenericLLNode *current = list->head;
+  while (NULL != current) {
+    if (list->data_equals(data, current->data)) {
+      count++;
+    }
+
+    current = current->next;
+  }
+
+  return count;
 }
 
 void *generic_ll_get_data(GenericLL *list, size_t index, GenericLLError *error) {

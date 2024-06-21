@@ -286,7 +286,7 @@ GenericLL *generic_ll_create(
  *              error code to DATA_NULL.
  * 
  *              If the memory allocation for the new node fails, the function
- *              returns NULL and sets the error code to CALLOC_ERROR.
+ *              returns original list and sets the error code to CALLOC_ERROR.
  * 
  *              If the error is NULL, the function does not set the error.
  * 
@@ -305,6 +305,61 @@ GenericLL *generic_ll_create(
 GenericLL *generic_ll_push_front(
   GenericLL *list,
   void *data,
+  GenericLLError *error
+);
+
+/* --------------------------------------------------------------------------
+ * Function: generic_ll_push_back
+ * --------------------------------------------------------------------------
+ * 
+ * Description: Add an element to the end of the list.
+ * 
+ *             If the list is NULL, the function returns the list and sets the
+ *             error code to LIST_NULL.
+ * 
+ *             If the data is NULL, the function returns the list and sets the
+ *             error code to DATA_NULL.
+ * 
+ *              If the memory allocation for the new node fails, the function
+ *              returns original list and sets the error code to CALLOC_ERROR.
+ * 
+ *             If the error is NULL, the function does not set the error.
+ * 
+ * Complexity: O(1)
+ * 
+ * Parameters:
+ *  - list: The list to which we add the element.
+ *  - data: The data of the new element.
+ *  - error: A pointer to a variable of type GenericLLError, where we store the
+ *           error code if an error occurs.
+ * 
+ * Return: The list with the new element added to the front, or original list
+ *         if an error occurs.
+ * 
+ * -------------------------------------------------------------------------- */
+GenericLL *generic_ll_push_back(
+  GenericLL *list,
+  void *data,
+  GenericLLError *error
+);
+
+void *generic_ll_pop_front(
+  GenericLL *list,
+  GenericLLError *error
+);
+
+GenericLL *generic_ll_delete_at_front(
+  GenericLL *list,
+  GenericLLError *error
+);
+
+void *generic_ll_pop_back(
+  GenericLL *list,
+  GenericLLError *error
+);
+
+GenericLL *generic_ll_delete_at_back(
+  GenericLL *list,
   GenericLLError *error
 );
 
@@ -338,6 +393,81 @@ GenericLL *generic_ll_push_front(
  * 
  * -------------------------------------------------------------------------- */
 void generic_ll_free(GenericLL *list, GenericLLError *error);
+
+/* --------------------------------------------------------------------------
+ * Function: generic_ll_is_empty
+ * --------------------------------------------------------------------------
+ * 
+ * Description: Check if the list is empty.
+ * 
+ *              If the list is NULL, the function returns false and sets the
+ *              error code to LIST_NULL.
+ * 
+ *              If the error is NULL, the function does not set the error.
+ * 
+ * Parameters:
+ *  - list: The list to check if it is empty.
+ *  - error: A pointer to a variable of type GenericLLError, where we store the
+ *           error code if an error occurs.
+ * 
+ * Return: True if the list is empty, false otherwise.
+ * 
+ * -------------------------------------------------------------------------- */
+bool generic_ll_is_empty(GenericLL *list);
+
+/* --------------------------------------------------------------------------
+ * Function: generic_ll_size
+ * --------------------------------------------------------------------------
+ * 
+ * Description: Get the number of elements in the list.
+ * 
+ *             If the list is NULL, the function returns zero and sets the
+ *             error code to LIST_NULL.
+ * 
+ *             If the error is NULL, the function does not set the error.
+ * 
+ * Parameters:
+ *  - list: The list for which we get the number of elements.
+ *  - error: A pointer to a variable of type GenericLLError, where we store the
+ *           error code if an error occurs.
+ * 
+ * Return: The number of elements in the list, or zero if an error occurs.
+ * 
+ * -------------------------------------------------------------------------- */
+size_t generic_ll_size(GenericLL *list);
+
+/* --------------------------------------------------------------------------
+ * Function: generic_ll_contains
+ * --------------------------------------------------------------------------
+ * 
+ * Description: Check if the list contains the specified data.
+ * 
+ *              If the list is NULL, the function returns false and sets the
+ *              error code to LIST_NULL.
+ * 
+ *              If the data is NULL, the function returns false and sets the
+ *              error code to DATA_NULL.
+ * 
+ *              If the error is NULL, the function does not set the error.
+ * 
+ * Complexity: O(n)
+ * 
+ * Parameters:
+ *  - list: The list to check.
+ *  - data: The data to check for.
+ *  - error: A pointer to a variable of type GenericLLError, where we store the
+ *           error code if an error occurs.
+ * 
+ * Return: true if the list contains the data, false otherwise.
+ * 
+ * -------------------------------------------------------------------------- */
+bool generic_ll_contains(GenericLL *list, void *data, GenericLLError *error);
+
+size_t generic_ll_count_occurrences(
+  GenericLL *list,
+  void *data,
+  GenericLLError *error
+);
 
 /* --------------------------------------------------------------------------   
  * Function: generic_ll_get_data

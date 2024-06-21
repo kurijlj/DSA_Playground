@@ -41,6 +41,9 @@ endif ()
 # Set to build with shared libraries by default
 option (BUILD_SHARED_LIBS "Build using shared libraries" ON)
 
+# Set to build with tests by default
+option (BUILD_TESTS "Build with tests" ON)
+
 # Set the output directory for the executable
 set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
@@ -63,4 +66,11 @@ target_include_directories (
     )
 
 # Add the source code
-add_subdirectory (./src)
+add_subdirectory ("${PROJECT_SOURCE_DIR}/src")
+
+# Add the test code
+if (BUILD_TESTS)
+    add_subdirectory ("${PROJECT_SOURCE_DIR}/tests"
+        "${CMAKE_BINARY_DIR}/tests"
+    )
+endif ()

@@ -155,6 +155,8 @@ int main(int argc, char **argv) {
       (size_t) generic_ll_to_string(&buffer, list, &error) - 1);
     munit_assert_string_equal("GenericLL(None)", buffer);
 
+    printf("%s: %s at %p\n", APP_NAME, buffer, list);
+
     /* Free the buffer */
     free(buffer);
     buffer = NULL;
@@ -176,6 +178,8 @@ int main(int argc, char **argv) {
       (size_t) generic_ll_to_string(&buffer, list, &error) - 1);
     munit_assert_string_equal("GenericLL(42)", buffer);
 
+    printf("%s: %s at %p\n", APP_NAME, buffer, list);
+
     /* Free the buffer */
     free(buffer);
     buffer = NULL;
@@ -195,6 +199,8 @@ int main(int argc, char **argv) {
       (size_t) generic_ll_to_string(&buffer, list, &error) - 1);
     munit_assert_string_equal("GenericLL(-356, 42)", buffer);
 
+    printf("%s: %s at %p\n", APP_NAME, buffer, list);
+
     /* Free the buffer */
     free(buffer);
     buffer = NULL;
@@ -213,6 +219,8 @@ int main(int argc, char **argv) {
     munit_assert_size(strlen("GenericLL(0, -356, 42)"), ==,
       (size_t) generic_ll_to_string(&buffer, list, &error) - 1);
     munit_assert_string_equal("GenericLL(0, -356, 42)", buffer);
+
+    printf("%s: %s at %p\n", APP_NAME, buffer, list);
 
     /* Free the buffer */
     free(buffer);
@@ -235,6 +243,8 @@ int main(int argc, char **argv) {
       (size_t) generic_ll_to_string(&buffer, list, &error) - 1);
     munit_assert_string_equal("GenericLL(1024, 0, -356, 42)", buffer);
 
+    printf("%s: %s at %p\n", APP_NAME, buffer, list);
+
     /* Free the buffer */
     free(buffer);
     buffer = NULL;
@@ -253,6 +263,8 @@ int main(int argc, char **argv) {
     munit_assert_size(strlen("GenericLL(-2048, 1024, 0, -356, 42)"), ==,
       (size_t) generic_ll_to_string(&buffer, list, &error) - 1);
     munit_assert_string_equal("GenericLL(-2048, 1024, 0, -356, 42)", buffer);
+
+    printf("%s: %s at %p\n", APP_NAME, buffer, list);
 
     /* Free the buffer */
     free(buffer);
@@ -274,6 +286,8 @@ int main(int argc, char **argv) {
     munit_assert_string_equal("GenericLL(11, -2048, 1024, 0, -356, 42)",
       buffer);
 
+    printf("%s: %s at %p\n", APP_NAME, buffer, list);
+
     /* Free the buffer */
     free(buffer);
     buffer = NULL;
@@ -294,6 +308,8 @@ int main(int argc, char **argv) {
     munit_assert_string_equal("GenericLL(100, 11, -2048, 1024, 0, -356, 42)",
       buffer);
 
+    printf("%s: %s at %p\n", APP_NAME, buffer, list);
+
     /* Free the buffer */
     free(buffer);
     buffer = NULL;
@@ -313,6 +329,8 @@ int main(int argc, char **argv) {
       (size_t) generic_ll_to_string(&buffer, list, &error) - 1);
     munit_assert_string_equal("GenericLL(3, 100, 11, ..., 0, -356, 42)",
       buffer);
+
+    printf("%s: %s at %p\n", APP_NAME, buffer, list);
 
     /* Free the buffer */
     free(buffer);
@@ -335,6 +353,8 @@ int main(int argc, char **argv) {
       "GenericLL(25, 3, 100, ..., 0, -356, 42)",
       buffer);
 
+    printf("%s: %s at %p\n", APP_NAME, buffer, list);
+
     /* Free the buffer */
     free(buffer);
     buffer = NULL;
@@ -342,6 +362,92 @@ int main(int argc, char **argv) {
     /* Test pushing a null pointer to data */
     munit_assert_ptr_equal(list, generic_ll_push_front(list, NULL, &error));
     munit_assert_int(DATA_NULL, ==, error);
+
+    /* Test pushing at the back of the list */
+    data = malloc(sizeof(int));
+    *data = 337;
+    munit_assert_ptr_equal(list, generic_ll_push_back(list, data, &error));
+    munit_assert_int(NO_ERROR, ==, error);
+
+    /* Test 'generic_ll_get_data' function on a non-empty linked list */
+    munit_assert_int(*data, ==, *(int *)generic_ll_get_data(list, 9, &error));
+    munit_assert_int(NO_ERROR, ==, error);
+
+    /* Generate string representation of the linked list and print it */
+    munit_assert_size(strlen("GenericLL(25, 3, 100, ..., -356, 42, 337)"),
+      ==, (size_t) generic_ll_to_string(&buffer, list, &error) - 1);
+    munit_assert_string_equal(
+      "GenericLL(25, 3, 100, ..., -356, 42, 337)",
+      buffer);
+
+    printf("%s: %s at %p\n", APP_NAME, buffer, list);
+
+    /* Free the buffer */
+    free(buffer);
+    buffer = NULL;
+
+    /* Test popping the front of the list */
+    data = (int *) generic_ll_pop_front(list, &error);
+    munit_assert_int(25, ==, *data);
+    free(data);
+
+    /* Generate string representation of the linked list and print it */
+    munit_assert_size(strlen("GenericLL(3, 100, 11, ..., -356, 42, 337)"),
+      ==, (size_t) generic_ll_to_string(&buffer, list, &error) - 1);
+    munit_assert_string_equal(
+      "GenericLL(3, 100, 11, ..., -356, 42, 337)",
+      buffer);
+
+    printf("%s: %s at %p\n", APP_NAME, buffer, list);
+
+    /* Free the buffer */
+    free(buffer);
+    buffer = NULL;
+
+    /* Test popping the back of the list */
+    data = (int *) generic_ll_pop_back(list, &error);
+    munit_assert_int(337, ==, *data);
+    free(data);
+
+    /* Generate string representation of the linked list and print it */
+    munit_assert_size(strlen("GenericLL(3, 100, 11, ..., 0, -356, 42)"),
+      ==, (size_t) generic_ll_to_string(&buffer, list, &error) - 1);
+    munit_assert_string_equal("GenericLL(3, 100, 11, ..., 0, -356, 42)",
+      buffer);
+
+    printf("%s: %s at %p\n", APP_NAME, buffer, list);
+
+    /* Free the buffer */
+    free(buffer);
+    buffer = NULL;
+
+    /* Test deleting a node at the front of the list */
+    munit_assert_ptr_equal(list, generic_ll_delete_at_front(list, &error));
+    munit_assert_int(NO_ERROR, ==, error);
+
+    /* Generate string representation of the linked list and print it */
+    munit_assert_size(strlen("GenericLL(100, 11, -2048, 1024, 0, -356, 42)"),
+      ==, (size_t) generic_ll_to_string(&buffer, list, &error) - 1);
+    munit_assert_string_equal("GenericLL(100, 11, -2048, 1024, 0, -356, 42)",
+      buffer);
+
+    printf("%s: %s at %p\n", APP_NAME, buffer, list);
+
+    /* Free the buffer */
+    free(buffer);
+    buffer = NULL;
+
+    /* Test deleting a node at the back of the list */
+    munit_assert_ptr_equal(list, generic_ll_delete_at_back(list, &error));
+    munit_assert_int(NO_ERROR, ==, error);
+
+    /* Generate string representation of the linked list and print it */
+    munit_assert_size(strlen("GenericLL(100, 11, -2048, 1024, 0, -356)"),
+      ==, (size_t) generic_ll_to_string(&buffer, list, &error) - 1);
+    munit_assert_string_equal("GenericLL(100, 11, -2048, 1024, 0, -356)",
+      buffer);
+
+    printf("%s: %s at %p\n", APP_NAME, buffer, list);
 
     /* Free the buffer */
     free(buffer);
