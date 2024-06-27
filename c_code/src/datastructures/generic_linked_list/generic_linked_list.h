@@ -413,7 +413,7 @@ void generic_ll_free(GenericLL *list, GenericLLError *error);
  * Return: True if the list is empty, false otherwise.
  * 
  * -------------------------------------------------------------------------- */
-bool generic_ll_is_empty(GenericLL *list);
+bool generic_ll_is_empty(GenericLL *list, GenericLLError *error);
 
 /* --------------------------------------------------------------------------
  * Function: generic_ll_size
@@ -434,7 +434,7 @@ bool generic_ll_is_empty(GenericLL *list);
  * Return: The number of elements in the list, or zero if an error occurs.
  * 
  * -------------------------------------------------------------------------- */
-size_t generic_ll_size(GenericLL *list);
+size_t generic_ll_size(GenericLL *list, GenericLLError *error);
 
 /* --------------------------------------------------------------------------
  * Function: generic_ll_contains

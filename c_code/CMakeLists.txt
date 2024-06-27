@@ -27,7 +27,7 @@ set (CMAKE_C_STANDARD_REQUIRED ON)
 # Set the C flags
 if (MSVC)
     # Use the highest warning level
-    add_compile_options (/W4 /Zi /MDd)
+    add_compile_options (/W4 /Zi /MDd /analyze)
 else ()
     # Use the highest warning level
     add_compile_options (-Wall -Wextra -pedantic)

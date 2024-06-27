@@ -46,8 +46,9 @@
 
 
 /* ==========================================================================
- * Macros Definitions Section
+ * Preprocessor Definitions Section
  * ========================================================================== */
+#define MAX_TEST_NAME_SIZE 64
 
 
 /* ==========================================================================
@@ -72,8 +73,28 @@ bool data_equals(void *data1, void *data2);
  * Test Cases Section
  * ========================================================================== */
 
+/* User defined utility data structures ------------------------------------- */
+typedef struct {
+  const char *test_name;
+  void *data;
+  size_t data_size;
+} Testload;
+
+/* Test data ---------------------------------------------------------------- */
+int pl1[] = {42};
+
+static Testload testloads[] = {
+  {
+    "node-creation",              /* test_name */
+    pl1,                          /* data */
+    sizeof(pl1) / sizeof(pl1[0])  /* data_size */
+  },
+  {NULL, NULL, 0}  /* End of the array */
+};
+
 /* Tests cases -------------------------------------------------------------- */
 MunitResult node_creation(const MunitParameter params[], void* fixture);
+MunitResult list_creation(const MunitParameter params[], void* fixture);
 
 /* Tets array --------------------------------------------------------------- */
 MunitTest tests[] = {
@@ -85,6 +106,15 @@ MunitTest tests[] = {
     MUNIT_TEST_OPTION_NONE, /* options */
     NULL /* parameters */
   },
+  {
+    "/list-creation", /* name */
+    list_creation, /* test */
+    NULL, /* setup */
+    NULL, /* tear_down */
+    MUNIT_TEST_OPTION_NONE, /* options */
+    NULL /* parameters */
+  },
+
   /* Mark the end of the array with an entry where the test
    * function is NULL */
   { NULL, NULL, NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL }
@@ -105,7 +135,7 @@ static const MunitSuite test_suite = {
  * ========================================================================== */
 
 int main(int argc, char *argv[]) {
-  return munit_suite_main(&test_suite, NULL, argc, argv);
+  return munit_suite_main(&test_suite, testloads, argc, argv);
 }
 
 
@@ -145,12 +175,42 @@ bool data_equals(void *data1, void *data2) {
  * ========================================================================== */
 
 MunitResult node_creation(const MunitParameter params[], void* input_data) {
-  int *data = (int *)input_data;
+  (MunitParameter *) params; /* unused */
+  Testload *testload = (Testload *) input_data;
+
+  /* Check if the input data is NULL */
+  munit_assert_not_null(testloads);
+
+  /* Search for the our test data in the payloads array */
+  while (NULL != testload->test_name) {
+    if (0 == strncmp(
+      testload->test_name,
+      "node-creation",
+      MAX_TEST_NAME_SIZE
+    )) {
+      break;
+    }
+
+    testload++;
+  }
+
+  /* Check if we found our test data */
+  munit_assert_not_null(testload->test_name);
+
+  /* We found our test data. Now we can run the test */
   GenericLLError error = NO_ERROR;
 
-  GenericLLNode *node = generic_ll_create_node(data, &error);
+  GenericLLNode *node = generic_ll_create_node(testload->data, &error);
   munit_assert_not_null(node);
   munit_assert_int(error, ==, NO_ERROR);
+  free(node);
+
+  return MUNIT_OK;
+}
+
+MunitResult list_creation(const MunitParameter params[], void* input_data) {
+  (MunitParameter *) params; /* unused */
+  (void *) input_data;       /* unused */
 
   return MUNIT_OK;
 }
