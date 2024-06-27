@@ -97,6 +97,42 @@ static int _generic_ll_string_length(
  * Algorithms Definitions Section
  * ========================================================================== */
 
+/* Consider this instead ----------------------------------------------------
+static Node *create_node(const void *data, size_t sizeof_data, int *error) {
+    *error = 0;
+
+    if (NULL == data) {
+        *error = 1;
+
+        return NULL;
+    }
+
+    if (0 == sizeof_data) {
+        *error = 2;
+
+        return NULL;
+    }
+
+    Node *node = calloc(1, sizeof(Node));
+    if (NULL == node) {
+        *error = 3;
+
+        return NULL;
+    }
+
+    node->data = calloc(1, sizeof_data);
+        if (NULL == node->data) {
+        *error = 4;
+
+        free(node);
+        return NULL;
+    }
+
+    memcpy(node->data, data, sizeof_data);
+
+    return node;
+}
+ * -------------------------------------------------------------------------- */
 GenericLLNode *generic_ll_create_node(
     void *data, 
     GenericLLError *error
