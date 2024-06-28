@@ -57,25 +57,29 @@
 typedef enum {
   NO_ERROR,
   CALLOC_ERROR,
+  DATA_SIZE_ZERO,
   DATA_TO_STRING_NULL,
   DATA_EQUALS_NULL,
   DESTINATION_BUFFER_NULL,
   DATA_NULL,
   LIST_NULL,
   INDEX_OUT_OF_BOUNDS,
-  LIST_EMPTY
+  LIST_EMPTY,
+  DATA_NOT_FOUND
 } GenericLLError;
 
 static char const * const error_message[] = {
   "No error.",
   "Error allocating memory using calloc.",
+  "Data size is set to zero.",
   "Pointer to `data_to_string` function is NULL.",
   "Pointer to `data_equals` function is NULL.",
   "Pointer to destination buffer is NULL.",
   "Pointer to data is NULL.",
   "Pointer to list is NULL.",
   "Index out of bounds.",
-  "List is empty."
+  "List is empty.",
+  "Data not found."
 };
 
 
@@ -99,6 +103,7 @@ static char const * const error_message[] = {
  * -------------------------------------------------------------------------- */
 typedef struct generic_ll_node {
     void *data;
+    size_t data_size;
     struct generic_ll_node *next;
 } GenericLLNode;
 
@@ -175,7 +180,6 @@ typedef struct generic_ll {
     bool (*data_greater)(void *data1, void *data2);
     bool (*data_less_or_equal)(void *data1, void *data2);
     bool (*data_greater_or_equal)(void *data1, void *data2);
-    void (*data_free)(void *data);
 } GenericLL;
 
 
@@ -211,7 +215,11 @@ typedef struct generic_ll {
  *  - GenericLLNode *: A pointer to the new node.
  * 
  * -------------------------------------------------------------------------- */
-GenericLLNode *generic_ll_create_node(void *data, GenericLLError *error);
+GenericLLNode *generic_ll_create_node(
+  const void *data,
+  const size_t data_size,
+  GenericLLError *error
+);
 
 /* --------------------------------------------------------------------------   
   * Function: generic_ll_create
@@ -269,7 +277,6 @@ GenericLL *generic_ll_create(
   bool (*data_greater)(void *data1, void *data2),
   bool (*data_less_or_equal)(void *data1, void *data2),
   bool (*data_greater_or_equal)(void *data1, void *data2),
-  void (*data_free)(void *data),
   GenericLLError *error
 );
 
@@ -304,7 +311,8 @@ GenericLL *generic_ll_create(
  * -------------------------------------------------------------------------- */
 GenericLL *generic_ll_push_front(
   GenericLL *list,
-  void *data,
+  const void *data,
+  const size_t data_size,
   GenericLLError *error
 );
 
@@ -339,7 +347,8 @@ GenericLL *generic_ll_push_front(
  * -------------------------------------------------------------------------- */
 GenericLL *generic_ll_push_back(
   GenericLL *list,
-  void *data,
+  const void *data,
+  const size_t data_size,
   GenericLLError *error
 );
 
@@ -362,6 +371,8 @@ GenericLL *generic_ll_delete_at_back(
   GenericLL *list,
   GenericLLError *error
 );
+
+void generic_ll_node_free(GenericLLNode *node);
 
 /* --------------------------------------------------------------------------
  * Function: generic_ll_free
@@ -386,13 +397,11 @@ GenericLL *generic_ll_delete_at_back(
  * 
  * Parameters:
  *  - list: The list to free.
- *  - error: A pointer to a variable of type GenericLLError, where we store the
- *           error code if an error occurs.
  * 
  * Return: void
  * 
  * -------------------------------------------------------------------------- */
-void generic_ll_free(GenericLL *list, GenericLLError *error);
+void generic_ll_free(GenericLL *list);
 
 /* --------------------------------------------------------------------------
  * Function: generic_ll_is_empty
@@ -461,7 +470,7 @@ size_t generic_ll_size(GenericLL *list, GenericLLError *error);
  * Return: true if the list contains the data, false otherwise.
  * 
  * -------------------------------------------------------------------------- */
-bool generic_ll_contains(GenericLL *list, void *data, GenericLLError *error);
+size_t generic_ll_contains(GenericLL *list, void *data, GenericLLError *error);
 
 size_t generic_ll_count_occurrences(
   GenericLL *list,

@@ -10,6 +10,40 @@ enable_testing ()
 
 
 # -----------------------------------------------------------------------------
+# Target: munit_test
+# -----------------------------------------------------------------------------
+#
+# Description: A dummy test target to perform memory checks for the 'munit'
+#              library.
+#
+# -----------------------------------------------------------------------------
+
+# Show message at what configuration stage we are
+message(STATUS "Configuring the `munit_test` target")
+
+# Source files
+add_executable(munit_test
+  munit_test.c
+)
+
+# Link required libraries
+target_link_libraries(munit_test PRIVATE
+  munit
+)
+
+# Set include directories
+target_include_directories(munit_test PRIVATE
+    ${MUNIT_INCLUDE_DIR}
+)
+
+# Add the test to the test suite
+add_test(
+  NAME munit_test
+  COMMAND munit_test
+)
+
+
+# -----------------------------------------------------------------------------
 # Target: generic_linked_list_test
 # -----------------------------------------------------------------------------
 #
@@ -17,27 +51,27 @@ enable_testing ()
 #
 # -----------------------------------------------------------------------------
 
-# Show message that we are building the `generic_linked_list_test` target
+# Show message at what configuration stage we are
 message(STATUS "Configuring the `generic_linked_list_test` target")
 
-# Set the source files for the 'generic_linked_list_test' target
+# Source files
 add_executable(generic_linked_list_test
   generic_linked_list_test.c
   ${CMAKE_SOURCE_DIR}/src/datastructures/generic_linked_list/generic_linked_list.c
 )
 
-# Link the 'generic_linked_list_test' target with the 'munit' test framework
+# Link required libraries
 target_link_libraries(generic_linked_list_test PRIVATE
   munit
 )
 
-# Include the required directories for the `invalid_frees` target
+# Set include directories
 target_include_directories(generic_linked_list_test PRIVATE
     ${MUNIT_INCLUDE_DIR}
     ${CMAKE_SOURCE_DIR}/src/datastructures/generic_linked_list
 )
 
-# Add the 'generic_linked_list_test' target as a test
+# Add the test to the test suite
 add_test(
   NAME generic_linked_list_test
   COMMAND generic_linked_list_test

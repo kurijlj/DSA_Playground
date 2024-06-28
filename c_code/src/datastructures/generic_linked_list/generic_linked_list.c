@@ -37,6 +37,7 @@
 /* System headers */
 
 /* Standard Library headers */
+#include <limits.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -97,59 +98,44 @@ static int _generic_ll_string_length(
  * Algorithms Definitions Section
  * ========================================================================== */
 
-/* Consider this instead ----------------------------------------------------
-static Node *create_node(const void *data, size_t sizeof_data, int *error) {
-    *error = 0;
-
-    if (NULL == data) {
-        *error = 1;
-
-        return NULL;
-    }
-
-    if (0 == sizeof_data) {
-        *error = 2;
-
-        return NULL;
-    }
-
-    Node *node = calloc(1, sizeof(Node));
-    if (NULL == node) {
-        *error = 3;
-
-        return NULL;
-    }
-
-    node->data = calloc(1, sizeof_data);
-        if (NULL == node->data) {
-        *error = 4;
-
-        free(node);
-        return NULL;
-    }
-
-    memcpy(node->data, data, sizeof_data);
-
-    return node;
-}
- * -------------------------------------------------------------------------- */
 GenericLLNode *generic_ll_create_node(
-    void *data, 
+    const void *data,
+    size_t data_size,
     GenericLLError *error
     ) {
-  *error = NO_ERROR; /* Set error to default value */
+  *error = NO_ERROR;
 
-  GenericLLNode *node = calloc(1, sizeof(GenericLLNode));
-  if (node == NULL) {
-    *error = CALLOC_ERROR;
+  if (NULL == data) {
+      *error = DATA_NULL;
 
-    return NULL;
+      return NULL;
   }
 
-  node->data = data;
+  if (0 == data_size) {
+      *error = DATA_SIZE_ZERO;
+
+      return NULL;
+  }
+
+  GenericLLNode *node = calloc(1, sizeof(GenericLLNode));
+  if (NULL == node) {
+      *error = CALLOC_ERROR;
+
+      return NULL;
+  }
+
+  node->data = calloc(1, data_size);
+      if (NULL == node->data) {
+      *error = CALLOC_ERROR;
+
+      free(node);
+      return NULL;
+  }
+
+  memcpy(node->data, data, data_size);
+  node->data_size = data_size;
 
   return node;
-
 }
 
 GenericLL *generic_ll_create(
@@ -159,7 +145,6 @@ GenericLL *generic_ll_create(
     bool (*data_greater)(void *data1, void *data2),
     bool (*data_less_or_equal)(void *data1, void *data2),
     bool (*data_greater_or_equal)(void *data1, void *data2),
-    void (*data_free)(void *data),
     GenericLLError *error
     ) {
   if (NULL != error) {
@@ -197,14 +182,14 @@ GenericLL *generic_ll_create(
   heap->data_greater = data_greater;
   heap->data_less_or_equal = data_less_or_equal;
   heap->data_greater_or_equal = data_greater_or_equal;
-  heap->data_free = data_free;
 
   return heap;
 }
 
 GenericLL *generic_ll_push_front(
     GenericLL *list,
-    void *data,
+    const void *data,
+    const size_t data_size,
     GenericLLError *error
   ) {
   if (NULL != error) {
@@ -227,7 +212,15 @@ GenericLL *generic_ll_push_front(
     return list;
   }
 
-  GenericLLNode *node = generic_ll_create_node(data, error);
+  if (0 == data_size) {
+    if (NULL != error) {
+      *error = DATA_SIZE_ZERO;
+    }
+
+    return list;
+  }
+
+  GenericLLNode *node = generic_ll_create_node(data, data_size, error);
   if (NULL == node) {
     return list;
   }
@@ -247,7 +240,8 @@ GenericLL *generic_ll_push_front(
 
 GenericLL *generic_ll_push_back(
     GenericLL *list,
-    void *data,
+    const void *data,
+    const size_t data_size,
     GenericLLError *error
   ) {
   if (NULL != error) {
@@ -270,7 +264,15 @@ GenericLL *generic_ll_push_back(
     return list;
   }
 
-  GenericLLNode *node = generic_ll_create_node(data, error);
+  if (0 == data_size) {
+    if (NULL != error) {
+      *error = DATA_SIZE_ZERO;
+    }
+
+    return list;
+  }
+
+  GenericLLNode *node = generic_ll_create_node(data, data_size, error);
   if (NULL == node) {
     return list;
   }
@@ -318,8 +320,20 @@ void *generic_ll_pop_front(GenericLL *list, GenericLLError *error) {
   }
   list->size--;
 
-  void *data = node->data;
+  void *data = calloc(1, node->data_size);
+  if (NULL == data) {
+    if (NULL != error) {
+      *error = CALLOC_ERROR;
+    }
+
+    return NULL;
+  }
+
+  memcpy(data, node->data, node->data_size);
+
+  free(node->data);
   free(node);
+
   return data;
 }
 
@@ -344,14 +358,16 @@ GenericLL *generic_ll_delete_at_front(GenericLL *list, GenericLLError *error) {
     return list;
   }
 
-  void *data = generic_ll_pop_front(list, error);
-  if (NULL == data) {
-    return list;
+  GenericLLNode *node = list->head;
+  if (1 == list->size) {
+    list->head = NULL;
+    list->tail = NULL;
+  } else {
+    list->head = list->head->next;
   }
+  list->size--;
 
-  if (NULL != list->data_free) {
-    list->data_free(data);
-  }
+  generic_ll_node_free(node);
 
   return list;
 }
@@ -390,11 +406,22 @@ void *generic_ll_pop_back(GenericLL *list, GenericLLError *error) {
     list->tail = current;
     list->tail->next = NULL;
   }
-
   list->size--;
 
-  void *data = node->data;
+  void *data = calloc(1, node->data_size);
+  if (NULL == data) {
+    if (NULL != error) {
+      *error = CALLOC_ERROR;
+    }
+
+    return NULL;
+  }
+
+  memcpy(data, node->data, node->data_size);
+
+  free(node->data);
   free(node);
+
   return data;
 }
 
@@ -419,28 +446,40 @@ GenericLL *generic_ll_delete_at_back(GenericLL *list, GenericLLError *error) {
     return list;
   }
 
-  void *data = generic_ll_pop_back(list, error);
-  if (NULL == data) {
-    return list;
-  }
+  GenericLLNode *node = list->tail;
+  if (1 == list->size) {
+    list->head = NULL;
+    list->tail = NULL;
+  } else {
+    GenericLLNode *current = list->head;
+    while (current->next != list->tail) {
+      current = current->next;
+    }
 
-  if (NULL != list->data_free) {
-    list->data_free(data);
+    list->tail = current;
+    list->tail->next = NULL;
   }
+  list->size--;
+
+  generic_ll_node_free(node);
 
   return list;
 }
 
-void generic_ll_free(GenericLL *list, GenericLLError *error) {
-  if (NULL != error) {
-    *error = NO_ERROR; /* Set error to default value */
+void generic_ll_node_free(GenericLLNode *node) {
+  if (NULL == node) {
+    return;
   }
 
-  if (NULL == list) {
-    if (NULL != error) {
-      *error = LIST_NULL;
-    }
+  if (NULL != node->data) {
+    free(node->data);
+  }
 
+  free(node);
+}
+
+void generic_ll_free(GenericLL *list) {
+  if (NULL == list) {
     return;
   }
 
@@ -453,10 +492,7 @@ void generic_ll_free(GenericLL *list, GenericLLError *error) {
   GenericLLNode *current = list->head;
   while (NULL != current) {
     GenericLLNode *next = current->next;
-    if (NULL != list->data_free) {
-      list->data_free(current->data);
-    }
-    free(current);
+    generic_ll_node_free(current);
     current = next;
   }
 
@@ -495,7 +531,7 @@ size_t generic_ll_size(GenericLL *list, GenericLLError *error) {
   return list->size;
 }
 
-bool generic_ll_contains(
+size_t generic_ll_contains(
     GenericLL *list,
     void *data,
     GenericLLError *error
@@ -509,7 +545,7 @@ bool generic_ll_contains(
       *error = LIST_NULL;
     }
 
-    return false;
+    return SIZE_MAX;
   }
 
   if (NULL == data) {
@@ -517,19 +553,31 @@ bool generic_ll_contains(
       *error = DATA_NULL;
     }
 
-    return false;
+    return SIZE_MAX;
+  }
+
+  if (0 == list->size) {
+    if (NULL != error) {
+      *error = LIST_EMPTY;
+    }
+
+    return SIZE_MAX;
   }
 
   GenericLLNode *current = list->head;
+  size_t index = 0;
   while (NULL != current) {
     if (list->data_equals(data, current->data)) {
-      return true;
+      return index;
     }
 
     current = current->next;
+    index++;
   }
 
-  return false;
+  /* If we reach this point, the data is not in the list */
+  *error = DATA_NOT_FOUND;
+  return SIZE_MAX;
 }
 
 /* --------------------------------------------------------------------------
@@ -642,7 +690,18 @@ void *generic_ll_get_data(GenericLL *list, size_t index, GenericLLError *error) 
     current = current->next;
   }
 
-  return current->data;
+  void *data = calloc(1, current->data_size);
+  if (NULL == data) {
+    if (NULL != error) {
+      *error = CALLOC_ERROR;
+    }
+
+    return NULL;
+  }
+
+  memcpy(data, current->data, current->data_size);
+
+  return data;
 }
 
 GenericLLNode *generic_ll_get_node(

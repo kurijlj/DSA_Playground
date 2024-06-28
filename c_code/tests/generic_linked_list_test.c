@@ -37,6 +37,7 @@
 /* System headers */
 
 /* Standard Library headers */
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -74,34 +75,42 @@ bool data_equals(void *data1, void *data2);
  * ========================================================================== */
 
 /* Tests cases -------------------------------------------------------------- */
-static int *node_creation_setup(const MunitParameter params[],
-  void* user_data);
-static void node_creation_tear_down(void* fixture);
-static MunitResult node_creation(const MunitParameter params[], void* fixture);
-static MunitResult list_creation(const MunitParameter params[], void* fixture);
+static MunitResult node_creation_test(const MunitParameter params[],
+  void* fixture);
+static MunitResult list_creation_test(const MunitParameter params[],
+  void* fixture);
+static MunitResult empty_list_test(const MunitParameter params[],
+  void* fixture);
+static void *empty_list_setup(const MunitParameter params[], void *user_data);
+static void empty_list_tear_down(void *fixture);
 
 /* Tets array --------------------------------------------------------------- */
 MunitTest tests[] = {
   {
     "/node-creation", /* name */
-    node_creation, /* test */
-    node_creation_setup, /* setup */
-    node_creation_tear_down, /* tear_down */
-    MUNIT_TEST_OPTION_NONE, /* options */
-    NULL /* parameters */
-  },
-  {
-    "/list-creation", /* name */
-    list_creation, /* test */
+    node_creation_test, /* test */
     NULL, /* setup */
     NULL, /* tear_down */
     MUNIT_TEST_OPTION_NONE, /* options */
     NULL /* parameters */
   },
-
-  /* Mark the end of the array with an entry where the test
-   * function is NULL */
-  { NULL, NULL, NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL }
+  {
+    "/list-creation", /* name */
+    list_creation_test, /* test */
+    NULL, /* setup */
+    NULL, /* tear_down */
+    MUNIT_TEST_OPTION_NONE, /* options */
+    NULL /* parameters */
+  },
+  {
+    "/empty-list", /* name */
+    empty_list_test, /* test */
+    empty_list_setup, /* setup */
+    empty_list_tear_down, /* tear_down */
+    MUNIT_TEST_OPTION_NONE, /* options */
+    NULL /* parameters */
+  },
+  { NULL, NULL, NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL }  /* end of array */
 };
 
 /* Test suite --------------------------------------------------------------- */
@@ -158,39 +167,180 @@ bool data_equals(void *data1, void *data2) {
  * Test Cases Definitions Section
  * ========================================================================== */
 
-static int *node_creation_setup(
-  const MunitParameter params[],
-  void *user_data
-) {
-  (MunitParameter *) params; /* unused */
-  (void *) user_data;        /* unused */
-
-  int *data = malloc(sizeof(int));
-  *data = 42;
-
-  return data;
-}
-
-static void node_creation_tear_down(void *fixture) {
-  free(fixture);
-}
-
-static MunitResult node_creation(
+/* Node creation test ------------------------------------------------------- */
+static MunitResult node_creation_test(
     const MunitParameter params[],
-    void* test_data
+    void* fixture
   ) {
   (MunitParameter *) params; /* unused */
-  (void *) test_data;        /* unused */
+  (void *) fixture; /* unused */
+
+  int data = 42;
   GenericLLError error = NO_ERROR;
+  GenericLLNode *node = generic_ll_create_node(&data, sizeof(int), &error);
+
+  munit_assert_int(error, ==, NO_ERROR);
+  munit_assert_not_null(node);
+  munit_assert_ptr_not_equal(node->data, &data);
+  munit_assert_int(*(int *)node->data, ==, data);
+
+  generic_ll_node_free(node);
 
   return MUNIT_OK;
 }
 
-static list_creation(const MunitParameter params[], void* input_data) {
+/* List creation test ------------------------------------------------------- */
+static MunitResult list_creation_test(
+    const MunitParameter params[],
+    void* fixture
+  ) {
   (MunitParameter *) params; /* unused */
-  (void *) input_data;       /* unused */
+  (void *) fixture; /* unused */
+
+  GenericLLError error = NO_ERROR;
+  GenericLL *list = generic_ll_create(int_to_string, data_equals, NULL,
+    NULL, NULL, NULL, &error);
+
+  munit_assert_int(error, ==, NO_ERROR);
+  munit_assert_not_null(list);
+  munit_assert_null(list->head);
+  munit_assert_null(list->tail);
+  munit_assert_size(list->size, ==, 0);
+
+  generic_ll_free(list);
 
   return MUNIT_OK;
+}
+
+/* Empty list test ---------------------------------------------------------- */
+static MunitResult empty_list_test(
+    const MunitParameter params[],
+    void* fixture
+  ) {
+  (MunitParameter *) params; /* unused */
+
+GenericLLError error = NO_ERROR;
+  GenericLL *list = (GenericLL *) fixture;
+
+  munit_assert_not_null(list);
+  munit_assert_null(list->head);
+  munit_assert_null(list->tail);
+  munit_assert_size(list->size, ==, 0);
+
+  /* Test pop_front on empty list */
+  int *data = (int *) generic_ll_pop_front(list, &error);
+  munit_assert_int(error, ==, LIST_EMPTY);
+  munit_assert_null(data);
+  munit_assert_null(list->head);
+  munit_assert_null(list->tail);
+  munit_assert_size(list->size, ==, 0);
+
+  /* Reset error */
+  error = NO_ERROR;
+
+  /* Test pop_back on empty list */
+  data = (int *) generic_ll_pop_back(list, &error);
+  munit_assert_int(error, ==, LIST_EMPTY);
+  munit_assert_null(data);
+  munit_assert_null(list->head);
+  munit_assert_null(list->tail);
+  munit_assert_size(list->size, ==, 0);
+
+  /* Reset error */
+  error = NO_ERROR;
+
+  /* Test delete_at_front on empty list */
+  GenericLL *result = generic_ll_delete_at_front(list, &error);
+  munit_assert_int(error, ==, LIST_EMPTY);
+  munit_assert_ptr_equal(result, list);
+  munit_assert_null(list->head);
+  munit_assert_null(list->tail);
+  munit_assert_size(list->size, ==, 0);
+
+  /* Reset error */
+  error = NO_ERROR;
+
+  /* Test delete_at_back on empty list */
+  result = generic_ll_delete_at_back(list, &error);
+  munit_assert_int(error, ==, LIST_EMPTY);
+  munit_assert_ptr_equal(result, list);
+  munit_assert_null(list->head);
+  munit_assert_null(list->tail);
+  munit_assert_size(list->size, ==, 0);
+
+  /* Reset error */
+  error = NO_ERROR;
+
+  /* Test is_empty on empty list */
+  munit_assert_true(generic_ll_is_empty(list, &error));
+  munit_assert_int(error, ==, NO_ERROR);
+
+  /* Test size on empty list */
+  munit_assert_size(generic_ll_size(list, &error), ==, 0);
+  munit_assert_int(error, ==, NO_ERROR);
+
+  /* Test contains on empty list */
+  int value = 42;
+  size_t index = generic_ll_contains(list, &value, &error);
+  munit_assert_int(error, ==, LIST_EMPTY);
+  munit_assert_size(index, ==, SIZE_MAX);
+
+  /* Reset error */
+  error = NO_ERROR;
+
+  /* Test count_occurrences on empty list */
+  size_t count = generic_ll_count_occurrences(list, &value, &error);
+  munit_assert_int(error, ==, LIST_EMPTY);
+  munit_assert_size(count, ==, 0);
+
+  /* Reset error */
+  error = NO_ERROR;
+
+  /* Test get_data on empty list */
+  data = (int *) generic_ll_get_data(list, 0, &error);
+  munit_assert_int(error, ==, LIST_EMPTY);
+  munit_assert_null(data);
+
+  /* Reset error */
+  error = NO_ERROR;
+
+  /* Test get_node on empty list */
+  GenericLLNode *node = generic_ll_get_node(list, 0, &error);
+  munit_assert_int(error, ==, LIST_EMPTY);
+  munit_assert_null(node);
+
+  /* Reset error */
+  error = NO_ERROR;
+
+  /* Test to_string on empty list */
+  char *str = NULL;
+  int size = generic_ll_to_string(&str, list, &error);
+  munit_assert_int(error, ==, NO_ERROR);
+  munit_assert_string_equal(str, "GenericLL(None)");
+  munit_assert_int(size - 1, ==, strlen("GenericLL(None)"));
+
+  free(str);
+
+  return MUNIT_OK;
+}
+
+static void *empty_list_setup(
+    const MunitParameter params[],
+    void *user_data
+  ) {
+  (MunitParameter *) params; /* unused */
+  (void *) user_data; /* unused */
+
+  GenericLLError error = NO_ERROR;
+  GenericLL *list = generic_ll_create(int_to_string, data_equals, NULL,
+    NULL, NULL, NULL, &error);
+
+  return list;
+}
+
+static void empty_list_tear_down(void *fixture) {
+  GenericLL *list = (GenericLL *) fixture;
+  generic_ll_free(list);
 }
 
 
