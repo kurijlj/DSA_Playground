@@ -51,25 +51,25 @@
  * ========================================================================== */
 
 /* --------------------------------------------------------------------------
- * Function: _generic_ll_string_length
+ * Function: _gll_string_length
  * --------------------------------------------------------------------------
  * 
  * Description: Calculate the size of the string representation of the list.
  * 
  *              The string representation of the list is in the following form:
  * 
- *                GenericLL(data1, data2, data3, ..., dataN-2, dataN-1, dataN)
+ *                GLLList(data1, data2, data3, ..., dataN-2, dataN-1, dataN)
  * 
  *              where data1, data2, data3, ..., dataN-2, dataN-1, and dataN are
  *              the string representations of the data of the elements of the
  *              list. If the list is empty, the string representation is:
  * 
- *                GenericLL(None)
+ *                GLLList(None)
  * 
  *              If the list has less than eight elements, the string
  *              representation is in the following form:
  * 
- *                GenericLL(data1, data2, data3, data4, data5, data6, data7)
+ *                GLLList(data1, data2, data3, data4, data5, data6, data7)
  * 
  *              If the list is NULL, the function returns zero and sets the
  *              error code to LIST_NULL.
@@ -81,16 +81,16 @@
  * 
  * Parameters:
  *  - list: The list for which we calculate the size of the string.
- *  - error: A pointer to a variable of type GenericLLError, where we store the
+ *  - error: A pointer to a variable of type GLLError, where we store the
  *           error code if an error occurs.
  * 
  * Return: The size of the string representation of the list, or zero if an
  *         error occurs.
  * 
  * -------------------------------------------------------------------------- */
-static int _generic_ll_string_length(
-  GenericLL *list,
-  GenericLLError *error
+static int _gll_string_length(
+  GLLList *list,
+  GLLError *error
 );
 
 
@@ -98,10 +98,10 @@ static int _generic_ll_string_length(
  * Algorithms Definitions Section
  * ========================================================================== */
 
-GenericLLNode *generic_ll_create_node(
+_GLLNode *_gll_create_node(
     const void *data,
-    size_t data_size,
-    GenericLLError *error
+    const size_t data_size,
+    GLLError *error
     ) {
   *error = NO_ERROR;
 
@@ -111,13 +111,7 @@ GenericLLNode *generic_ll_create_node(
       return NULL;
   }
 
-  if (0 == data_size) {
-      *error = DATA_SIZE_ZERO;
-
-      return NULL;
-  }
-
-  GenericLLNode *node = calloc(1, sizeof(GenericLLNode));
+  _GLLNode *node = calloc(1, sizeof(_GLLNode));
   if (NULL == node) {
       *error = CALLOC_ERROR;
 
@@ -133,22 +127,26 @@ GenericLLNode *generic_ll_create_node(
   }
 
   memcpy(node->data, data, data_size);
-  node->data_size = data_size;
 
   return node;
 }
 
-GenericLL *generic_ll_create(
-    int (*data_to_string)(char **buffer, void *data, GenericLLError *error),
-    bool (*data_equals)(void *data1, void *data2),
-    bool (*data_less)(void *data1, void *data2),
-    bool (*data_greater)(void *data1, void *data2),
-    bool (*data_less_or_equal)(void *data1, void *data2),
-    bool (*data_greater_or_equal)(void *data1, void *data2),
-    GenericLLError *error
+GLLList *gll_create(
+    const size_t data_size,
+    int (*data_to_string)(char **buffer, void *data, GLLError *error),
+    char (*data_compare)(void *data1, void *data2),
+    GLLError *error
     ) {
   if (NULL != error) {
     *error = NO_ERROR; /* Set error to default value */
+  }
+
+  if (0 == data_size) {
+    if (NULL != error) {
+      *error = DATA_SIZE_ZERO;
+    }
+
+    return NULL;
   }
 
   if (NULL == data_to_string) {
@@ -159,15 +157,15 @@ GenericLL *generic_ll_create(
     return NULL;
   }
 
-  if (NULL == data_equals) {
+  if (NULL == data_compare) {
     if (NULL != error) {
-      *error = DATA_EQUALS_NULL;
+      *error = DATA_COMPARE_NULL;
     }
 
     return NULL;
   }
 
-  GenericLL *heap = calloc(1, sizeof(GenericLL));
+  GLLList *heap = calloc(1, sizeof(GLLList));
   if (heap == NULL) {
     if (NULL != error) {
       *error = CALLOC_ERROR;
@@ -176,21 +174,17 @@ GenericLL *generic_ll_create(
     return NULL;
   }
 
+  heap->data_size = data_size;
   heap->data_to_string = data_to_string;
-  heap->data_equals = data_equals;
-  heap->data_less = data_less;
-  heap->data_greater = data_greater;
-  heap->data_less_or_equal = data_less_or_equal;
-  heap->data_greater_or_equal = data_greater_or_equal;
+  heap->data_compare = data_compare;
 
   return heap;
 }
 
-GenericLL *generic_ll_push_front(
-    GenericLL *list,
+GLLList *gll_push_front(
+    GLLList *list,
     const void *data,
-    const size_t data_size,
-    GenericLLError *error
+    GLLError *error
   ) {
   if (NULL != error) {
     *error = NO_ERROR; /* Set error to default value */
@@ -212,15 +206,7 @@ GenericLL *generic_ll_push_front(
     return list;
   }
 
-  if (0 == data_size) {
-    if (NULL != error) {
-      *error = DATA_SIZE_ZERO;
-    }
-
-    return list;
-  }
-
-  GenericLLNode *node = generic_ll_create_node(data, data_size, error);
+  _GLLNode *node = _gll_create_node(data, list->data_size, error);
   if (NULL == node) {
     return list;
   }
@@ -238,11 +224,10 @@ GenericLL *generic_ll_push_front(
   return list;
 }
 
-GenericLL *generic_ll_push_back(
-    GenericLL *list,
+GLLList *gll_push_back(
+    GLLList *list,
     const void *data,
-    const size_t data_size,
-    GenericLLError *error
+    GLLError *error
   ) {
   if (NULL != error) {
     *error = NO_ERROR; /* Set error to default value */
@@ -264,15 +249,7 @@ GenericLL *generic_ll_push_back(
     return list;
   }
 
-  if (0 == data_size) {
-    if (NULL != error) {
-      *error = DATA_SIZE_ZERO;
-    }
-
-    return list;
-  }
-
-  GenericLLNode *node = generic_ll_create_node(data, data_size, error);
+  _GLLNode *node = _gll_create_node(data, list->data_size, error);
   if (NULL == node) {
     return list;
   }
@@ -290,7 +267,7 @@ GenericLL *generic_ll_push_back(
   return list;
 }
 
-void *generic_ll_pop_front(GenericLL *list, GenericLLError *error) {
+void *gll_pop_front(GLLList *list, GLLError *error) {
   if (NULL != error) {
     *error = NO_ERROR; /* Set error to default value */
   }
@@ -311,7 +288,7 @@ void *generic_ll_pop_front(GenericLL *list, GenericLLError *error) {
     return NULL;
   }
 
-  GenericLLNode *node = list->head;
+  _GLLNode *node = list->head;
   if (1 == list->size) {
     list->head = NULL;
     list->tail = NULL;
@@ -320,7 +297,7 @@ void *generic_ll_pop_front(GenericLL *list, GenericLLError *error) {
   }
   list->size--;
 
-  void *data = calloc(1, node->data_size);
+  void *data = calloc(1, list->data_size);
   if (NULL == data) {
     if (NULL != error) {
       *error = CALLOC_ERROR;
@@ -329,7 +306,7 @@ void *generic_ll_pop_front(GenericLL *list, GenericLLError *error) {
     return NULL;
   }
 
-  memcpy(data, node->data, node->data_size);
+  memcpy(data, node->data, list->data_size);
 
   free(node->data);
   free(node);
@@ -337,7 +314,7 @@ void *generic_ll_pop_front(GenericLL *list, GenericLLError *error) {
   return data;
 }
 
-GenericLL *generic_ll_delete_at_front(GenericLL *list, GenericLLError *error) {
+GLLList *gll_delete_at_front(GLLList *list, GLLError *error) {
   if (NULL != error) {
     *error = NO_ERROR; /* Set error to default value */
   }
@@ -358,7 +335,7 @@ GenericLL *generic_ll_delete_at_front(GenericLL *list, GenericLLError *error) {
     return list;
   }
 
-  GenericLLNode *node = list->head;
+  _GLLNode *node = list->head;
   if (1 == list->size) {
     list->head = NULL;
     list->tail = NULL;
@@ -367,12 +344,12 @@ GenericLL *generic_ll_delete_at_front(GenericLL *list, GenericLLError *error) {
   }
   list->size--;
 
-  generic_ll_node_free(node);
+  gll_node_free(node);
 
   return list;
 }
 
-void *generic_ll_pop_back(GenericLL *list, GenericLLError *error) {
+void *gll_pop_back(GLLList *list, GLLError *error) {
   if (NULL != error) {
     *error = NO_ERROR; /* Set error to default value */
   }
@@ -393,12 +370,12 @@ void *generic_ll_pop_back(GenericLL *list, GenericLLError *error) {
     return NULL;
   }
 
-  GenericLLNode *node = list->tail;
+  _GLLNode *node = list->tail;
   if (1 == list->size) {
     list->head = NULL;
     list->tail = NULL;
   } else {
-    GenericLLNode *current = list->head;
+    _GLLNode *current = list->head;
     while (current->next != list->tail) {
       current = current->next;
     }
@@ -408,7 +385,7 @@ void *generic_ll_pop_back(GenericLL *list, GenericLLError *error) {
   }
   list->size--;
 
-  void *data = calloc(1, node->data_size);
+  void *data = calloc(1, list->data_size);
   if (NULL == data) {
     if (NULL != error) {
       *error = CALLOC_ERROR;
@@ -417,7 +394,7 @@ void *generic_ll_pop_back(GenericLL *list, GenericLLError *error) {
     return NULL;
   }
 
-  memcpy(data, node->data, node->data_size);
+  memcpy(data, node->data, list->data_size);
 
   free(node->data);
   free(node);
@@ -425,7 +402,7 @@ void *generic_ll_pop_back(GenericLL *list, GenericLLError *error) {
   return data;
 }
 
-GenericLL *generic_ll_delete_at_back(GenericLL *list, GenericLLError *error) {
+GLLList *gll_delete_at_back(GLLList *list, GLLError *error) {
   if (NULL != error) {
     *error = NO_ERROR; /* Set error to default value */
   }
@@ -446,12 +423,12 @@ GenericLL *generic_ll_delete_at_back(GenericLL *list, GenericLLError *error) {
     return list;
   }
 
-  GenericLLNode *node = list->tail;
+  _GLLNode *node = list->tail;
   if (1 == list->size) {
     list->head = NULL;
     list->tail = NULL;
   } else {
-    GenericLLNode *current = list->head;
+    _GLLNode *current = list->head;
     while (current->next != list->tail) {
       current = current->next;
     }
@@ -461,12 +438,12 @@ GenericLL *generic_ll_delete_at_back(GenericLL *list, GenericLLError *error) {
   }
   list->size--;
 
-  generic_ll_node_free(node);
+  gll_node_free(node);
 
   return list;
 }
 
-void generic_ll_node_free(GenericLLNode *node) {
+void gll_node_free(_GLLNode *node) {
   if (NULL == node) {
     return;
   }
@@ -478,7 +455,7 @@ void generic_ll_node_free(GenericLLNode *node) {
   free(node);
 }
 
-void generic_ll_free(GenericLL *list) {
+void gll_free(GLLList *list) {
   if (NULL == list) {
     return;
   }
@@ -489,17 +466,17 @@ void generic_ll_free(GenericLL *list) {
     return;
   }
 
-  GenericLLNode *current = list->head;
+  _GLLNode *current = list->head;
   while (NULL != current) {
-    GenericLLNode *next = current->next;
-    generic_ll_node_free(current);
+    _GLLNode *next = current->next;
+    gll_node_free(current);
     current = next;
   }
 
   free(list);
 }
 
-bool generic_ll_is_empty(GenericLL *list, GenericLLError *error) {
+bool gll_is_empty(GLLList *list, GLLError *error) {
   if (NULL != error) {
     *error = NO_ERROR; /* Set error to default value */
   }
@@ -515,7 +492,7 @@ bool generic_ll_is_empty(GenericLL *list, GenericLLError *error) {
   return 0 == list->size;
 }
 
-size_t generic_ll_size(GenericLL *list, GenericLLError *error) {
+size_t gll_size(GLLList *list, GLLError *error) {
   if (NULL != error) {
     *error = NO_ERROR; /* Set error to default value */
   }
@@ -531,10 +508,10 @@ size_t generic_ll_size(GenericLL *list, GenericLLError *error) {
   return list->size;
 }
 
-size_t generic_ll_contains(
-    GenericLL *list,
+size_t gll_contains(
+    GLLList *list,
     void *data,
-    GenericLLError *error
+    GLLError *error
   ) {
   if (NULL != error) {
     *error = NO_ERROR; /* Set error to default value */
@@ -564,10 +541,10 @@ size_t generic_ll_contains(
     return SIZE_MAX;
   }
 
-  GenericLLNode *current = list->head;
+  _GLLNode *current = list->head;
   size_t index = 0;
   while (NULL != current) {
-    if (list->data_equals(data, current->data)) {
+    if (0 == list->data_compare(data, current->data)) {
       return index;
     }
 
@@ -576,41 +553,17 @@ size_t generic_ll_contains(
   }
 
   /* If we reach this point, the data is not in the list */
-  *error = DATA_NOT_FOUND;
+  if (NULL != error) {
+    *error = DATA_NOT_FOUND;
+  }
+
   return SIZE_MAX;
 }
 
-/* --------------------------------------------------------------------------
- * Function: generic_ll_count_occurrences
- * --------------------------------------------------------------------------
- * 
- * Description: Count the number of occurrences of the data in the list.
- * 
- *              If the list is NULL, the function returns zero and sets the
- *              error code to LIST_NULL.
- * 
- *              If the data is NULL, the function returns zero and sets the
- *              error code to DATA_NULL.
- * 
- *              If the list is empty, the function returns zero and sets the
- *              error code to LIST_EMPTY.
- * 
- *              If the error is NULL, the function does not set the error.
- * 
- * Parameters:
- *  - list: The list in which we count the occurrences of the data.
- *  - data: The data for which we count the occurrences.
- *  - error: A pointer to a variable of type GenericLLError, where we store the
- *           error code if an error occurs.
- * 
- * Return: The number of occurrences of the data in the list, or zero if an
- *         error occurs, or if the occurrence count is zero.
- * 
- * -------------------------------------------------------------------------- */
-size_t generic_ll_count_occurrences(
-    GenericLL *list,
+size_t gll_count_occurrences(
+    GLLList *list,
     void *data,
-    GenericLLError *error
+    GLLError *error
   ) {
   if (NULL != error) {
     *error = NO_ERROR; /* Set error to default value */
@@ -644,9 +597,9 @@ size_t generic_ll_count_occurrences(
     return count;
   }
 
-  GenericLLNode *current = list->head;
+  _GLLNode *current = list->head;
   while (NULL != current) {
-    if (list->data_equals(data, current->data)) {
+    if (0 == list->data_compare(data, current->data)) {
       count++;
     }
 
@@ -656,7 +609,7 @@ size_t generic_ll_count_occurrences(
   return count;
 }
 
-void *generic_ll_get_data(GenericLL *list, size_t index, GenericLLError *error) {
+void *gll_get_data(GLLList *list, size_t index, GLLError *error) {
   if (NULL != error) {
     *error = NO_ERROR; /* Set error to default value */
   }
@@ -685,12 +638,12 @@ void *generic_ll_get_data(GenericLL *list, size_t index, GenericLLError *error) 
     return NULL;
   }
 
-  GenericLLNode *current = list->head;
+  _GLLNode *current = list->head;
   for (size_t i = 0; i < index; i++) {
     current = current->next;
   }
 
-  void *data = calloc(1, current->data_size);
+  void *data = calloc(1, list->data_size);
   if (NULL == data) {
     if (NULL != error) {
       *error = CALLOC_ERROR;
@@ -699,15 +652,15 @@ void *generic_ll_get_data(GenericLL *list, size_t index, GenericLLError *error) 
     return NULL;
   }
 
-  memcpy(data, current->data, current->data_size);
+  memcpy(data, current->data, list->data_size);
 
   return data;
 }
 
-GenericLLNode *generic_ll_get_node(
-    GenericLL *list,
+_GLLNode *gll_get_node(
+    GLLList *list,
     size_t index,
-    GenericLLError *error
+    GLLError *error
   ) {
   if (NULL != error) {
     *error = NO_ERROR; /* Set error to default value */
@@ -737,7 +690,7 @@ GenericLLNode *generic_ll_get_node(
     return NULL;
   }
 
-  GenericLLNode *current = list->head;
+  _GLLNode *current = list->head;
   for (size_t i = 0; i < index; i++) {
     current = current->next;
   }
@@ -745,7 +698,7 @@ GenericLLNode *generic_ll_get_node(
   return current;
 }
 
-static int _generic_ll_string_length(GenericLL *list, GenericLLError *error) {
+static int _gll_string_length(GLLList *list, GLLError *error) {
   if (NULL != error) {
     *error = NO_ERROR; /* Set error to default value */
   }
@@ -762,7 +715,7 @@ static int _generic_ll_string_length(GenericLL *list, GenericLLError *error) {
 
   char *data_str = NULL;  /* Buffer for the string representation of the data */
 
-  size += 10; /* "GenericLL(" */
+  size += 10; /* "GLLList(" */
 
   if (0 == list->size) {
     size += 4;  /* "None" */
@@ -771,7 +724,7 @@ static int _generic_ll_string_length(GenericLL *list, GenericLLError *error) {
     for(size_t i = 0; 3 > i && list->size > i; i++) {
       int data_str_size = list->data_to_string(
         &data_str,
-        generic_ll_get_data(list, i, NULL),
+        gll_get_data(list, i, NULL),
         error
       );
 
@@ -800,7 +753,7 @@ static int _generic_ll_string_length(GenericLL *list, GenericLLError *error) {
         for(size_t i = 3; list->size > i; i++) {
           int data_str_size = list->data_to_string(
             &data_str,
-            generic_ll_get_data(list, i, NULL),
+            gll_get_data(list, i, NULL),
             error
           );
 
@@ -826,7 +779,7 @@ static int _generic_ll_string_length(GenericLL *list, GenericLLError *error) {
         for(size_t i = list->size - 3; list->size > i; i++) {
           int data_str_size = list->data_to_string(
             &data_str,
-            generic_ll_get_data(list, i, NULL),
+            gll_get_data(list, i, NULL),
             error
           );
 
@@ -852,10 +805,10 @@ static int _generic_ll_string_length(GenericLL *list, GenericLLError *error) {
   return size;
 }
 
-int generic_ll_to_string(
+int gll_to_string(
     char **buffer,
-    GenericLL *list,
-    GenericLLError *error
+    GLLList *list,
+    GLLError *error
   ) {
   if (NULL != error) {
     *error = NO_ERROR; /* Set error to default value */
@@ -881,7 +834,7 @@ int generic_ll_to_string(
   }
 
   /* First we need to calculate the size of the buffer */
-  size = _generic_ll_string_length(list, error);
+  size = _gll_string_length(list, error);
 
   if (size <= 0) {
     return size;
@@ -899,10 +852,10 @@ int generic_ll_to_string(
 
   /* Copy the string representation of the list to the buffer */
   int offset = 0;
-  offset += sprintf(*buffer + offset, "GenericLL(");
+  offset += snprintf(*buffer + offset, 11, "GLLList(");
 
   if (0 == list->size) {
-    offset += sprintf(*buffer + offset, "None");
+    offset += snprintf(*buffer + offset, 5, "None");
   } else {
     char *data_str = NULL;  /* Buffer for the string representation of the data */
 
@@ -912,7 +865,7 @@ int generic_ll_to_string(
     for(size_t i = 0; 3 > i && list->size > i; i++) {
       int data_str_size = list->data_to_string(
         &data_str,
-        generic_ll_get_data(list, i, NULL),
+        gll_get_data(list, i, NULL),
         error
       );
 
@@ -922,12 +875,12 @@ int generic_ll_to_string(
         return 0;
       }
 
-      offset += sprintf(*buffer + offset, "%s", data_str);
+      offset += snprintf(*buffer + offset, data_str_size + 1, "%s", data_str);
       free(data_str);
       data_str = NULL;
 
       if (list->size - 1 != i) {
-        offset += sprintf(*buffer + offset, ", ");
+        offset += snprintf(*buffer + offset, 3, ", ");
       }
     }
 
@@ -942,7 +895,7 @@ int generic_ll_to_string(
         for(size_t i = 3; list->size > i; i++) {
           int data_str_size = list->data_to_string(
             &data_str,
-            generic_ll_get_data(list, i, NULL),
+            gll_get_data(list, i, NULL),
             error
           );
 
@@ -952,12 +905,17 @@ int generic_ll_to_string(
             return 0;
           }
 
-          offset += sprintf(*buffer + offset, "%s", data_str);
+          offset += snprintf(
+            *buffer + offset,
+            data_str_size + 1, 
+            "%s", 
+            data_str
+            );
           free(data_str);
           data_str = NULL;
 
           if(list->size - 1 > i) {
-            offset += sprintf(*buffer + offset, ", ");
+            offset += snprintf(*buffer + offset, 3, ", ");
           }
         }
       } else {
@@ -965,11 +923,11 @@ int generic_ll_to_string(
            elements, if list has more than seven elements. We use three dots to 
            indicate that there are more elements
         */
-        offset += sprintf(*buffer + offset, "..., ");
+        offset += snprintf(*buffer + offset, 6, "..., ");
         for(size_t i = list->size - 3; list->size > i; i++) {
           int data_str_size = list->data_to_string(
             &data_str,
-            generic_ll_get_data(list, i, NULL),
+            gll_get_data(list, i, NULL),
             error
           );
 
@@ -979,19 +937,24 @@ int generic_ll_to_string(
             return 0;
           }
 
-          offset += sprintf(*buffer + offset, "%s", data_str);
+          offset += snprintf(
+            *buffer + offset,
+            data_str_size + 1,
+            "%s", 
+            data_str
+            );
           free(data_str);
           data_str = NULL;
 
           if(list->size - 1 > i) {
-            offset += sprintf(*buffer + offset, ", ");
+            offset += snprintf(*buffer + offset, 3, ", ");
           }
         }
       }
     }
   }
 
-  offset += sprintf(*buffer + offset, ")");
+  offset += snprintf(*buffer + offset, 2, ")");
 
   return size;
 }

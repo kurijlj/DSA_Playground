@@ -66,8 +66,8 @@
  * User Defined Function Declarations Section
  * ========================================================================== */
 
-int int_to_string(char **buffer, void *data, GenericLLError *error);
-bool data_equals(void *data1, void *data2);
+int int_to_string(char **buffer, void *data, GLLError *error);
+char data_compare(void *data1, void *data2);
 
 
 /* ==========================================================================
@@ -75,38 +75,36 @@ bool data_equals(void *data1, void *data2);
  * ========================================================================== */
 
 /* Tests cases -------------------------------------------------------------- */
-static MunitResult node_creation_test(const MunitParameter params[],
+static MunitResult create_node_test(const MunitParameter params[],
   void* fixture);
-static MunitResult list_creation_test(const MunitParameter params[],
+static MunitResult create_list_test(const MunitParameter params[],
   void* fixture);
-static MunitResult empty_list_test(const MunitParameter params[],
+static MunitResult free_list_test(const MunitParameter params[],
   void* fixture);
-static void *empty_list_setup(const MunitParameter params[], void *user_data);
-static void empty_list_tear_down(void *fixture);
 
 /* Tets array --------------------------------------------------------------- */
 MunitTest tests[] = {
   {
-    "/node-creation", /* name */
-    node_creation_test, /* test */
+    "/create-node", /* name */
+    create_node_test, /* test */
     NULL, /* setup */
     NULL, /* tear_down */
     MUNIT_TEST_OPTION_NONE, /* options */
     NULL /* parameters */
   },
   {
-    "/list-creation", /* name */
-    list_creation_test, /* test */
+    "/create-list", /* name */
+    create_list_test, /* test */
     NULL, /* setup */
     NULL, /* tear_down */
     MUNIT_TEST_OPTION_NONE, /* options */
     NULL /* parameters */
   },
   {
-    "/empty-list", /* name */
-    empty_list_test, /* test */
-    empty_list_setup, /* setup */
-    empty_list_tear_down, /* tear_down */
+    "/free-list", /* name */
+    free_list_test, /* test */
+    NULL, /* setup */
+    NULL, /* tear_down */
     MUNIT_TEST_OPTION_NONE, /* options */
     NULL /* parameters */
   },
@@ -136,7 +134,7 @@ int main(int argc, char *argv[]) {
  * User Defined Function Definitions Section
  * ========================================================================== */
 
-int int_to_string(char **buffer, void *data, GenericLLError *error) {
+int int_to_string(char **buffer, void *data, GLLError *error) {
   if (NULL != error) {
     *error = NO_ERROR;
   }
@@ -155,11 +153,17 @@ int int_to_string(char **buffer, void *data, GenericLLError *error) {
   return snprintf(*buffer, size + 1, "%d", *int_data);
 }
 
-bool data_equals(void *data1, void *data2) {
+char data_compare(void *data1, void *data2) {
   int *int_data1 = (int *)data1;
   int *int_data2 = (int *)data2;
 
-  return *int_data1 == *int_data2;
+  if (*int_data1 < *int_data2) {
+    return -1;
+  } else if (*int_data1 > *int_data2) {
+    return 1;
+  }
+
+  return 0;
 }
 
 
@@ -167,8 +171,8 @@ bool data_equals(void *data1, void *data2) {
  * Test Cases Definitions Section
  * ========================================================================== */
 
-/* Node creation test ------------------------------------------------------- */
-static MunitResult node_creation_test(
+/* _gll_create_node test ---------------------------------------------------- */
+static MunitResult create_node_test(
     const MunitParameter params[],
     void* fixture
   ) {
@@ -176,171 +180,156 @@ static MunitResult node_creation_test(
   (void *) fixture; /* unused */
 
   int data = 42;
-  GenericLLError error = NO_ERROR;
-  GenericLLNode *node = generic_ll_create_node(&data, sizeof(int), &error);
+  GLLError error = NO_ERROR;
 
+  /* Test passing NULL data */
+  _GLLNode *node = _gll_create_node(NULL, 0, &error);
+  munit_assert_int(error, ==, DATA_NULL);
+  munit_assert_ptr_null(node);
+
+  /* Reset error */
+  error = NO_ERROR;
+
+  /* Test invoking with valid data */
+  node = _gll_create_node(&data, sizeof(int), &error);
   munit_assert_int(error, ==, NO_ERROR);
-  munit_assert_not_null(node);
-  munit_assert_ptr_not_equal(node->data, &data);
+  munit_assert_ptr_not_null(node);
+  munit_assert_ptr_not_null(node->data);
+  munit_assert_ptr_null(node->next);
   munit_assert_int(*(int *)node->data, ==, data);
 
-  generic_ll_node_free(node);
+  /* Reset error */
+  error = NO_ERROR;
+
+  /* Test if the function to convert data to string works */
+  char *buffer = NULL;
+  int len = 0;
+  len = int_to_string(&buffer, node->data, &error);
+  munit_assert_int(error, ==, NO_ERROR);
+  munit_assert_string_equal(buffer, "42");
+  munit_assert_size(strlen(buffer), ==, len);
+
+  /* Clean up */
+  free(node->data);
+  free(node);
 
   return MUNIT_OK;
 }
 
-/* List creation test ------------------------------------------------------- */
-static MunitResult list_creation_test(
+/* gll_create_list test ----------------------------------------------------- */
+static MunitResult create_list_test(
     const MunitParameter params[],
     void* fixture
   ) {
   (MunitParameter *) params; /* unused */
   (void *) fixture; /* unused */
 
-  GenericLLError error = NO_ERROR;
-  GenericLL *list = generic_ll_create(int_to_string, data_equals, NULL,
-    NULL, NULL, NULL, &error);
+  GLLError error = NO_ERROR;
 
+  /* Test passing zero data size */
+  GLLList *list = gll_create(0, NULL, NULL, &error);
+  munit_assert_int(error, ==, DATA_SIZE_ZERO);
+  munit_assert_ptr_null(list);
+
+  /* Test passing NULL data_to_string */
+  list = gll_create(sizeof(int), NULL, NULL, &error);
+  munit_assert_int(error, ==, DATA_TO_STRING_NULL);
+  munit_assert_ptr_null(list);
+
+  /* Reset error */
+  error = NO_ERROR;
+
+  /* Test passing NULL data_compare */
+  list = gll_create(sizeof(int), int_to_string, NULL, &error);
+  munit_assert_int(error, ==, DATA_COMPARE_NULL);
+  munit_assert_ptr_null(list);
+
+  /* Reset error */
+  error = NO_ERROR;
+
+  /* Test invoking with valid pointers */
+  list = gll_create(sizeof(int), int_to_string, data_compare, &error);
   munit_assert_int(error, ==, NO_ERROR);
-  munit_assert_not_null(list);
-  munit_assert_null(list->head);
-  munit_assert_null(list->tail);
+  munit_assert_ptr_not_null(list);
+  munit_assert_ptr_null(list->head);
+  munit_assert_ptr_null(list->tail);
   munit_assert_size(list->size, ==, 0);
+  munit_assert_size(list->data_size, ==, sizeof(int));
+  munit_assert_ptr_not_null(list->data_to_string);
+  munit_assert_ptr_not_null(list->data_compare);
 
-  generic_ll_free(list);
+  /* Clean up */
+  free(list);
 
   return MUNIT_OK;
 }
 
-/* Empty list test ---------------------------------------------------------- */
-static MunitResult empty_list_test(
+/* gll_free test ------------------------------------------------------- */
+static MunitResult free_list_test(
     const MunitParameter params[],
     void* fixture
   ) {
   (MunitParameter *) params; /* unused */
+  (void *) fixture; /* unused */
 
-GenericLLError error = NO_ERROR;
-  GenericLL *list = (GenericLL *) fixture;
+  /* Test passing NULL list */
+  gll_free(NULL);
 
-  munit_assert_not_null(list);
-  munit_assert_null(list->head);
-  munit_assert_null(list->tail);
-  munit_assert_size(list->size, ==, 0);
-
-  /* Test pop_front on empty list */
-  int *data = (int *) generic_ll_pop_front(list, &error);
-  munit_assert_int(error, ==, LIST_EMPTY);
-  munit_assert_null(data);
-  munit_assert_null(list->head);
-  munit_assert_null(list->tail);
-  munit_assert_size(list->size, ==, 0);
-
-  /* Reset error */
-  error = NO_ERROR;
-
-  /* Test pop_back on empty list */
-  data = (int *) generic_ll_pop_back(list, &error);
-  munit_assert_int(error, ==, LIST_EMPTY);
-  munit_assert_null(data);
-  munit_assert_null(list->head);
-  munit_assert_null(list->tail);
-  munit_assert_size(list->size, ==, 0);
-
-  /* Reset error */
-  error = NO_ERROR;
-
-  /* Test delete_at_front on empty list */
-  GenericLL *result = generic_ll_delete_at_front(list, &error);
-  munit_assert_int(error, ==, LIST_EMPTY);
-  munit_assert_ptr_equal(result, list);
-  munit_assert_null(list->head);
-  munit_assert_null(list->tail);
-  munit_assert_size(list->size, ==, 0);
-
-  /* Reset error */
-  error = NO_ERROR;
-
-  /* Test delete_at_back on empty list */
-  result = generic_ll_delete_at_back(list, &error);
-  munit_assert_int(error, ==, LIST_EMPTY);
-  munit_assert_ptr_equal(result, list);
-  munit_assert_null(list->head);
-  munit_assert_null(list->tail);
-  munit_assert_size(list->size, ==, 0);
-
-  /* Reset error */
-  error = NO_ERROR;
-
-  /* Test is_empty on empty list */
-  munit_assert_true(generic_ll_is_empty(list, &error));
+  /* Test passing an empty list */
+  GLLError error = NO_ERROR;
+  GLLList *list = gll_create(sizeof(int), int_to_string, data_compare, &error);
   munit_assert_int(error, ==, NO_ERROR);
+  gll_free(list);
 
-  /* Test size on empty list */
-  munit_assert_size(generic_ll_size(list, &error), ==, 0);
+  /* Test passing a list with one element */
+  error = NO_ERROR;
+  list = gll_create(sizeof(int), int_to_string, data_compare, &error);
   munit_assert_int(error, ==, NO_ERROR);
-
-  /* Test contains on empty list */
-  int value = 42;
-  size_t index = generic_ll_contains(list, &value, &error);
-  munit_assert_int(error, ==, LIST_EMPTY);
-  munit_assert_size(index, ==, SIZE_MAX);
-
-  /* Reset error */
-  error = NO_ERROR;
-
-  /* Test count_occurrences on empty list */
-  size_t count = generic_ll_count_occurrences(list, &value, &error);
-  munit_assert_int(error, ==, LIST_EMPTY);
-  munit_assert_size(count, ==, 0);
-
-  /* Reset error */
-  error = NO_ERROR;
-
-  /* Test get_data on empty list */
-  data = (int *) generic_ll_get_data(list, 0, &error);
-  munit_assert_int(error, ==, LIST_EMPTY);
-  munit_assert_null(data);
-
-  /* Reset error */
-  error = NO_ERROR;
-
-  /* Test get_node on empty list */
-  GenericLLNode *node = generic_ll_get_node(list, 0, &error);
-  munit_assert_int(error, ==, LIST_EMPTY);
-  munit_assert_null(node);
-
-  /* Reset error */
-  error = NO_ERROR;
-
-  /* Test to_string on empty list */
-  char *str = NULL;
-  int size = generic_ll_to_string(&str, list, &error);
+  _GLLNode *node = _gll_create_node(&(int){42}, sizeof(int), &error);
   munit_assert_int(error, ==, NO_ERROR);
-  munit_assert_string_equal(str, "GenericLL(None)");
-  munit_assert_int(size - 1, ==, strlen("GenericLL(None)"));
+  munit_assert_int(*((int *) node->data), ==, 42);
+  list->head = node;
+  list->tail = node;
+  list->size = 1;
+  gll_free(list);
 
-  free(str);
+  /* Test passing a list with multiple elements */
+  error = NO_ERROR;
+  list = gll_create(sizeof(int), int_to_string, data_compare, &error);
+  munit_assert_int(error, ==, NO_ERROR);
+  for (int i = 0; i < 10; i++) {
+    node = _gll_create_node(&(int){i}, sizeof(int), &error);
+    munit_assert_int(error, ==, NO_ERROR);
+    munit_assert_int(*((int *) node->data), ==, i);
+    if (i == 0) {
+      list->head = node;
+    } else {
+      list->tail->next = node;
+    }
+    list->tail = node;
+    list->size++;
+  }
+  gll_free(list);
+
+  /* Test passing a list with huge number of elements */
+  error = NO_ERROR;
+  list = gll_create(sizeof(int), int_to_string, data_compare, &error);
+  munit_assert_int(error, ==, NO_ERROR);
+  for (int i = 0; i < 1000000; i++) {
+    node = _gll_create_node(&(int){i}, sizeof(int), &error);
+    munit_assert_int(error, ==, NO_ERROR);
+    munit_assert_int(*((int *) node->data), ==, i);
+    if (i == 0) {
+      list->head = node;
+    } else {
+      list->tail->next = node;
+    }
+    list->tail = node;
+    list->size++;
+  }
+  gll_free(list);
 
   return MUNIT_OK;
-}
-
-static void *empty_list_setup(
-    const MunitParameter params[],
-    void *user_data
-  ) {
-  (MunitParameter *) params; /* unused */
-  (void *) user_data; /* unused */
-
-  GenericLLError error = NO_ERROR;
-  GenericLL *list = generic_ll_create(int_to_string, data_equals, NULL,
-    NULL, NULL, NULL, &error);
-
-  return list;
-}
-
-static void empty_list_tear_down(void *fixture) {
-  GenericLL *list = (GenericLL *) fixture;
-  generic_ll_free(list);
 }
 
 

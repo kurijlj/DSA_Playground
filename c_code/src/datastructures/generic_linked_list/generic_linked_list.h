@@ -54,26 +54,26 @@
  * Error Codes Section
  * ========================================================================== */
 
-typedef enum {
+typedef enum _generic_ll_error {
   NO_ERROR,
   CALLOC_ERROR,
   DATA_SIZE_ZERO,
   DATA_TO_STRING_NULL,
-  DATA_EQUALS_NULL,
+  DATA_COMPARE_NULL,
   DESTINATION_BUFFER_NULL,
   DATA_NULL,
   LIST_NULL,
   INDEX_OUT_OF_BOUNDS,
   LIST_EMPTY,
   DATA_NOT_FOUND
-} GenericLLError;
+} GLLError;
 
-static char const * const error_message[] = {
+static char const * const gll_error_message[] = {
   "No error.",
   "Error allocating memory using calloc.",
   "Data size is set to zero.",
   "Pointer to `data_to_string` function is NULL.",
-  "Pointer to `data_equals` function is NULL.",
+  "Pointer to `data_compare` function is NULL.",
   "Pointer to destination buffer is NULL.",
   "Pointer to data is NULL.",
   "Pointer to list is NULL.",
@@ -88,27 +88,26 @@ static char const * const error_message[] = {
  * ========================================================================== */
 
 /* -------------------------------------------------------------------------- 
- * Structure: GenericLLNode
+ * Structure: _GLLNode
  * -------------------------------------------------------------------------- 
  * Description: 
  * 
  * Data members:
- *                   void *data: 
- *    struct generic_ll_node *next: 
+ *            void *data: Pointer to the data stored in the node.
+ *   _GLLNode *next: Pointer to the next node in the linked list.
  * 
  * Methods:
  * 
  * Usage:
  * 
  * -------------------------------------------------------------------------- */
-typedef struct generic_ll_node {
+typedef struct _gll_node {
     void *data;
-    size_t data_size;
-    struct generic_ll_node *next;
-} GenericLLNode;
+    struct _gll_node *next;
+} _GLLNode;
 
 /* -------------------------------------------------------------------------- 
- * Structure: GenericLL
+ * Structure: GLLList
  * -------------------------------------------------------------------------- 
  * Description: A generic linked list structure that uses a heap to store the
  *              elements. Linked list is implemented as a singly linked list.
@@ -117,70 +116,36 @@ typedef struct generic_ll_node {
  *                 *data_to_string():  Converts the data to a string. It is
  *                                     used whenever the data needs to be 
  *                                     printed.
- *                    *data_equals():  Compares two data elements for equality.
- *                                     It is used to check if two data elements
- *                                     are equal, and for searching the linked
- *                                     list.
- * 
- *              User has to provide the following functions to compare the data
- *              elements (optional):
- *                           *data_less():  Compares two data elements and
- *                                          returns true if the first data
- *                                          element is less than the second data
- *                                          element. 
- *                        *data_greater():  Compares two data elements and
- *                                          returns true if the first data
- *                                          element is greater than the second
- *                                          data element.
- *                  *data_less_or_equal():  Compares two data elements and
- *                                          returns true if the first data
- *                                          element is less or equal to the
- *                                          second data element.
- *               *data_greater_or_equal():  Compares two data elements and
- *                                          returns true if the first data
- *                                          element is greater or equal to the
- *                                          second data element.
- * 
- *              If the user does not provide the optional functions, the linked
- *              list will not be able to sort the elements.
+ *                   *data_compare():  Compares two data elements and returns
+ *                                     -1 if the first data element is less than
+ *                                     the second data element, 0 if the first
+ *                                     data element is equal to the second data
+ *                                     element, and 1 if the first data element
+ *                                     is greater than the second data element.
  * 
  * Data members:
+ *    data_size:                Size of the data stored in the linked list.
  *    *head:                    Pointer to the head of the linked list.
  *    *tail:                    Pointer to the tail of the linked list.
  *    size:                     Number of elements in the linked list.
  *    *data_to_string():        Pointer to a function that converts the data to
  *                              a string.
- *    *data_equals():           Pointer to a function that compares two data
+ *    *data_compare():          Pointer to a function that compares two data
  *                              elements.
- *    *data_less():             Pointer to a function that compares two data 
- *                              elements.
- *    *data_greater():          Pointer to a function that compares two data 
- *                              elements.
- *    *data_less_or_equal():    Pointer to a function that compares two data
- *                              elements.
- *    *data_greater_or_equal(): Pointer to a function that compares two data
- *                              elements.
- *    *data_free():             Pointer to a function that frees the data. If
- *                              the pointer is NULL, the linked list will not
- *                              free the data, and it is the user's
- *                              responsibility to free the data.
  * 
  * Methods:
  * 
  * Usage:
  * 
  * -------------------------------------------------------------------------- */
-typedef struct generic_ll {
-    GenericLLNode *head;
-    GenericLLNode *tail;
+typedef struct _gll_list {
+    size_t data_size;
+    _GLLNode *head;
+    _GLLNode *tail;
     size_t size;
-    int (*data_to_string)(char **buffer, void *data, GenericLLError *error);
-    bool (*data_equals)(void *data1, void *data2);
-    bool (*data_less)(void *data1, void *data2);
-    bool (*data_greater)(void *data1, void *data2);
-    bool (*data_less_or_equal)(void *data1, void *data2);
-    bool (*data_greater_or_equal)(void *data1, void *data2);
-} GenericLL;
+    int (*data_to_string)(char **buffer, void *data, GLLError *error);
+    char (*data_compare)(void *data1, void *data2);
+} GLLList;
 
 
 /* ==========================================================================
@@ -188,41 +153,54 @@ typedef struct generic_ll {
  * ========================================================================== */
 
 /* -------------------------------------------------------------------------- 
- * Function: generic_ll_create_node
+ * Function: _gll_create_node
  * -------------------------------------------------------------------------- 
  * Description: Create a new node for the linked list.
  * 
- *              The function allocates memory for the new node and sets the
- *              data pointer to the data passed as an argument. The next
- *              pointer is set to NULL.
+ *              The function allocates memory for the new node and for the data
+ *              stored in the node. The size of the data is passed as an
+ *              argument. The function copies the data to the memory allocated
+ *              for the data. This way, the data stored in the node is not
+ *              affected by changes to the original data. Data from the stack
+ *              can also be stored in the node. User does not have to worry
+ *              about the lifetime of the data stored in the node, and to free
+ *              the memory allocated for the data stored in the node.
+ * 
+ *              The copy of the data is done using memcpy() function. The data
+ *              is copied byte by byte, and the size of the data is passed as an
+ *              argument. The function does not check if the data is a string or
+ *              a structure. The function does not add a null terminator to the
+ *              data if the data is a string. The function does not check if the
+ *              data is a valid string. The function does not check if the data
+ *              is a valid structure. The next pointer is set to NULL.
  * 
  *              The function returns a pointer to the new node.
  * 
- *              If the function fails to allocate memory for the new node, it
- *              returns NULL, and the error parameter is set to CALLOC_ERROR.
- *              If the error parameter is NULL, the function will not set the
- *              error parameter.
+ *              If the function fails to allocate memory for the new node, or
+ *              the data it returns NULL, and the error parameter is set to
+ *              CALLOC_ERROR. If the error parameter is NULL, the function will
+ *              not set the error parameter.
  * 
  *              This function is used internally by the linked list functions.
  *              It is not intended to be used by the user.
  * 
  * Parameters:
  *  - void *data: The data to be stored in the new node.
- *  - GenericLLError *error: A pointer to a GenericLLError variable to store
+ *  - GLLError *error: A pointer to a GLLError variable to store
  *    the error code. If NULL, the function will not set the error parameter.
  * 
  * Returns:
- *  - GenericLLNode *: A pointer to the new node.
+ *  - _GLLNode *: A pointer to the new node.
  * 
  * -------------------------------------------------------------------------- */
-GenericLLNode *generic_ll_create_node(
+_GLLNode *_gll_create_node(
   const void *data,
   const size_t data_size,
-  GenericLLError *error
+  GLLError *error
 );
 
 /* --------------------------------------------------------------------------   
-  * Function: generic_ll_create
+  * Function: gll_create
   * -------------------------------------------------------------------------   
   * 
   * Description: Create a generic linked list.
@@ -233,55 +211,36 @@ GenericLLNode *generic_ll_create_node(
   *              The function also initializes the pointers to the functions
   *              that:
   *               - convert data to string.
-  *               - compare two data for equality.
-  *               - compare two data for less.
-  *               - compare two data for greater.
-  *               - compare two data for less or equal.
-  *               - compare two data for greater or equal.
+  *               - compare two data.
   *
-  *               of which the pointers to first two functions are mandatory.
   *               First function is used to convert data to string, and is used
   *               for printing the data in the linked list. Second function is
-  *               used to compare two data for equality, and is used for
-  *               searching the linked list. If the pointers to the first two
+  *               used to compare two data. If the pointers to these two
   *               functions are NULL, the function returns NULL, and sets the
-  *               error code to DATA_TO_STRING_NULL or DATA_EQUALS_NULL,
-  *               respectively. Pointers to the rest of the functions can be
-  *               NULL, and are used for sorting the linked list. If any of the
-  *               pointers to the sorting functions are NULL, the lists sorting
-  *               facilities (i.e. functions) are disabled.
+  *               error code to DATA_TO_STRING_NULL or DATA_COMPARE_NULL,
+  *               respectively.
   * 
   *               The function returns NULL if memory allocation fails, and sets
   *               the error code to CALLOC_ERROR.
   *
   * Parameters:
   *  - data_to_string: pointer to a function that converts data to string.
-  *  - data_equals: pointer to a function that compares two data for equality.
-  *  - data_less: pointer to a function that compares two data for less.
-  *  - data_greater: pointer to a function that compares two data for greater.
-  *  - data_less_or_equal: pointer to a function that compares two data for less
-  *    or equal.
-  *  - data_greater_or_equal: pointer to a function that compares two data for
-  *    greater or equal.
-  *  - data_free: pointer to a function that frees the data.
-  *  - error: pointer to GenericLLError to store error code.
+  *  - data_compare: pointer to a function that compares two data.
+  *  - error: pointer to GLLError to store error code.
   *
   * Returns:
-  * - GenericLL: pointer to the generic linked list.
+  * - GLLList: pointer to the generic linked list.
   * 
   * ------------------------------------------------------------------------- */
-GenericLL *generic_ll_create(
-  int (*data_to_string)(char **buffer, void *data, GenericLLError *error),
-  bool (*data_equals)(void *data1, void *data2),
-  bool (*data_less)(void *data1, void *data2),
-  bool (*data_greater)(void *data1, void *data2),
-  bool (*data_less_or_equal)(void *data1, void *data2),
-  bool (*data_greater_or_equal)(void *data1, void *data2),
-  GenericLLError *error
+GLLList *gll_create(
+  const size_t data_size,
+  int (*data_to_string)(char **buffer, void *data, GLLError *error),
+  char (*data_compare)(void *data1, void *data2),
+  GLLError *error
 );
 
 /* --------------------------------------------------------------------------
- * Function: generic_ll_push_front
+ * Function: gll_push_front
  * --------------------------------------------------------------------------
  * 
  * Description: Add an element to the front of the list.
@@ -302,22 +261,21 @@ GenericLL *generic_ll_create(
  * Parameters:
  *  - list: The list to which we add the element.
  *  - data: The data of the new element.
- *  - error: A pointer to a variable of type GenericLLError, where we store the
+ *  - error: A pointer to a variable of type GLLError, where we store the
  *           error code if an error occurs.
  * 
  * Return: The list with the new element added to the front, or original list
  *         if an error occurs.
  * 
  * -------------------------------------------------------------------------- */
-GenericLL *generic_ll_push_front(
-  GenericLL *list,
+GLLList *gll_push_front(
+  GLLList *list,
   const void *data,
-  const size_t data_size,
-  GenericLLError *error
+  GLLError *error
 );
 
 /* --------------------------------------------------------------------------
- * Function: generic_ll_push_back
+ * Function: gll_push_back
  * --------------------------------------------------------------------------
  * 
  * Description: Add an element to the end of the list.
@@ -338,60 +296,53 @@ GenericLL *generic_ll_push_front(
  * Parameters:
  *  - list: The list to which we add the element.
  *  - data: The data of the new element.
- *  - error: A pointer to a variable of type GenericLLError, where we store the
+ *  - error: A pointer to a variable of type GLLError, where we store the
  *           error code if an error occurs.
  * 
  * Return: The list with the new element added to the front, or original list
  *         if an error occurs.
  * 
  * -------------------------------------------------------------------------- */
-GenericLL *generic_ll_push_back(
-  GenericLL *list,
+GLLList *gll_push_back(
+  GLLList *list,
   const void *data,
-  const size_t data_size,
-  GenericLLError *error
+  GLLError *error
 );
 
-void *generic_ll_pop_front(
-  GenericLL *list,
-  GenericLLError *error
+void *gll_pop_front(
+  GLLList *list,
+  GLLError *error
 );
 
-GenericLL *generic_ll_delete_at_front(
-  GenericLL *list,
-  GenericLLError *error
+GLLList *gll_delete_at_front(
+  GLLList *list,
+  GLLError *error
 );
 
-void *generic_ll_pop_back(
-  GenericLL *list,
-  GenericLLError *error
+void *gll_pop_back(
+  GLLList *list,
+  GLLError *error
 );
 
-GenericLL *generic_ll_delete_at_back(
-  GenericLL *list,
-  GenericLLError *error
+GLLList *gll_delete_at_back(
+  GLLList *list,
+  GLLError *error
 );
 
-void generic_ll_node_free(GenericLLNode *node);
+void gll_node_free(_GLLNode *node);
 
 /* --------------------------------------------------------------------------
- * Function: generic_ll_free
+ * Function: gll_free
  * --------------------------------------------------------------------------
  * 
  * Description: Free the memory allocated for the list and its elements.
  * 
- *              If the list is NULL, the function does nothing and sets the
- *              error code to LIST_NULL.
- * 
- *              If the list is empty, the function frees the memory allocated
- *              for the list data structure and sets the error code to NO_ERROR.
+ *              If the list is NULL, the function does nothing. If the list is
+ *              empty, the function frees the memory allocated for the list
+ *              data structure.
  * 
  *              If the list is not empty, the function frees the memory
- *              allocated for the list data structure and its nodes, and sets
- *              the error code to NO_ERROR. If the data_free function is not
- *              NULL, the function calls it for each element of the list.
- * 
- *              If the error is NULL, the function does not set the error.
+ *              allocated for the list data structure and its nodes.
  * 
  * Complexity: O(n)
  * 
@@ -401,10 +352,10 @@ void generic_ll_node_free(GenericLLNode *node);
  * Return: void
  * 
  * -------------------------------------------------------------------------- */
-void generic_ll_free(GenericLL *list);
+void gll_free(GLLList *list);
 
 /* --------------------------------------------------------------------------
- * Function: generic_ll_is_empty
+ * Function: gll_is_empty
  * --------------------------------------------------------------------------
  * 
  * Description: Check if the list is empty.
@@ -416,16 +367,16 @@ void generic_ll_free(GenericLL *list);
  * 
  * Parameters:
  *  - list: The list to check if it is empty.
- *  - error: A pointer to a variable of type GenericLLError, where we store the
+ *  - error: A pointer to a variable of type GLLError, where we store the
  *           error code if an error occurs.
  * 
  * Return: True if the list is empty, false otherwise.
  * 
  * -------------------------------------------------------------------------- */
-bool generic_ll_is_empty(GenericLL *list, GenericLLError *error);
+bool gll_is_empty(GLLList *list, GLLError *error);
 
 /* --------------------------------------------------------------------------
- * Function: generic_ll_size
+ * Function: gll_size
  * --------------------------------------------------------------------------
  * 
  * Description: Get the number of elements in the list.
@@ -437,16 +388,16 @@ bool generic_ll_is_empty(GenericLL *list, GenericLLError *error);
  * 
  * Parameters:
  *  - list: The list for which we get the number of elements.
- *  - error: A pointer to a variable of type GenericLLError, where we store the
+ *  - error: A pointer to a variable of type GLLError, where we store the
  *           error code if an error occurs.
  * 
  * Return: The number of elements in the list, or zero if an error occurs.
  * 
  * -------------------------------------------------------------------------- */
-size_t generic_ll_size(GenericLL *list, GenericLLError *error);
+size_t gll_size(GLLList *list, GLLError *error);
 
 /* --------------------------------------------------------------------------
- * Function: generic_ll_contains
+ * Function: gll_contains
  * --------------------------------------------------------------------------
  * 
  * Description: Check if the list contains the specified data.
@@ -464,25 +415,34 @@ size_t generic_ll_size(GenericLL *list, GenericLLError *error);
  * Parameters:
  *  - list: The list to check.
  *  - data: The data to check for.
- *  - error: A pointer to a variable of type GenericLLError, where we store the
+ *  - error: A pointer to a variable of type GLLError, where we store the
  *           error code if an error occurs.
  * 
- * Return: true if the list contains the data, false otherwise.
+ * Return: Index of the first node that contains the given data, or SIZE_MAX if
+ *         the data is not found or an error occurs.
  * 
  * -------------------------------------------------------------------------- */
-size_t generic_ll_contains(GenericLL *list, void *data, GenericLLError *error);
+size_t gll_contains(GLLList *list, void *data, GLLError *error);
 
-size_t generic_ll_count_occurrences(
-  GenericLL *list,
+size_t gll_count_occurrences(
+  GLLList *list,
   void *data,
-  GenericLLError *error
+  GLLError *error
 );
 
 /* --------------------------------------------------------------------------   
- * Function: generic_ll_get_data
+ * Function: gll_get_data
  * --------------------------------------------------------------------------   
  * 
  * Description: Retrieve the data stored in the node at the specified index.
+ * 
+ *              Retrieved pointer to the data is a pointer to the copy of the
+ *              data stored in the node. This way, the data stored in the node
+ *              is not affected by changes to the data. The user does not have
+ *              to worry about the lifetime of the data stored in the node, and
+ *              to free the memory allocated for the data stored in the node.
+ *              But the user has to free the memory allocated for the data
+ *              returned by this function.
  * 
  *              If the list is NULL, the function returns NULL and sets the
  *              error to LIST_NULL.
@@ -502,17 +462,17 @@ size_t generic_ll_count_occurrences(
  * Parameters:
  *  - list: pointer to the linked list.
  *  - index: index of the element for which to get the data.
- *  - error: pointer to GenericLLError to store error code.
+ *  - error: pointer to GLLError to store error code.
  * 
  * Returns:
  *  - void *: pointer to the data stored in the first element, or NULL if the
  *            list is NULL, empty, or the index is out of bounds.
  * 
  * -------------------------------------------------------------------------- */
-void *generic_ll_get_data(GenericLL *list, size_t index, GenericLLError *error);
+void *gll_get_data(GLLList *list, size_t index, GLLError *error);
 
 /* --------------------------------------------------------------------------
- * Function: generic_ll_get_node
+ * Function: gll_get_node
  * --------------------------------------------------------------------------
  * 
  * Description: Returns the node at the specified index in the list.
@@ -535,39 +495,39 @@ void *generic_ll_get_data(GenericLL *list, size_t index, GenericLLError *error);
  * Parameters:
  *  - list: The list from which to get the node.
  *  - index: The index of the node to get.
- *  - error: A pointer to a variable of type GenericLLError to store the error
+ *  - error: A pointer to a variable of type GLLError to store the error
  *           code.
  * 
  * Returns:
  *  - The node at the specified index in the list, or NULL if an error occurs.
  * 
  * -------------------------------------------------------------------------- */
-GenericLLNode *generic_ll_get_node(
-  GenericLL *list,
+_GLLNode *gll_get_node(
+  GLLList *list,
   size_t index,
-  GenericLLError *error
+  GLLError *error
 );
 
 /* --------------------------------------------------------------------------
- * Function: generic_ll_to_string
+ * Function: gll_to_string
  * --------------------------------------------------------------------------
  * 
  * Description: Generate a string representation of the list.
  * 
  *              The string representation of the list is in the following form:
  * 
- *                GenericLL(data1, data2, data3, ..., dataN-2, dataN-1, dataN)
+ *                GLLList(data1, data2, data3, ..., dataN-2, dataN-1, dataN)
  * 
  *              where data1, data2, data3, ..., dataN-2, dataN-1, and dataN are
  *              the string representations of the data of the elements of the
  *              list. If the list is empty, the string representation is:
  * 
- *                GenericLL(None)
+ *                GLLList(None)
  * 
  *              If the list has less than eight elements, the string
  *              representation is in the following form:
  * 
- *                GenericLL(data1, data2, data3, data4, data5, data6, data7)
+ *                GLLList(data1, data2, data3, data4, data5, data6, data7)
  * 
  *              If the list is NULL, the function returns zero and sets the
  *              error code to LIST_NULL.
@@ -581,17 +541,17 @@ GenericLLNode *generic_ll_get_node(
  *  - buffer: A pointer to a pointer to a char, where we store the string
  *            representation of the list.
  *  - list: The list for which we generate the string representation.
- *  - error: A pointer to a variable of type GenericLLError, where we store the
+ *  - error: A pointer to a variable of type GLLError, where we store the
  *           error code if an error occurs.
  * 
  * Return: The size of the string representation of the list, or zero if an
  *         error occurs.
  * 
  * -------------------------------------------------------------------------- */
-int generic_ll_to_string(
+int gll_to_string(
   char **buffer,
-  GenericLL *list,
-  GenericLLError *error
+  GLLList *list,
+  GLLError *error
 );
 
 /* ==========================================================================
