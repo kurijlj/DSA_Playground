@@ -37,6 +37,7 @@
 /* System headers */
 
 /* Standard Library headers */
+#include <errno.h>
 #include <limits.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -47,135 +48,70 @@
 
 
 /* ==========================================================================
-  * Internal Declarations Section
- * ========================================================================== */
-
-/* --------------------------------------------------------------------------
- * Function: _gll_string_length
- * --------------------------------------------------------------------------
- * 
- * Description: Calculate the size of the string representation of the list.
- * 
- *              The string representation of the list is in the following form:
- * 
- *                GLLList(data1, data2, data3, ..., dataN-2, dataN-1, dataN)
- * 
- *              where data1, data2, data3, ..., dataN-2, dataN-1, and dataN are
- *              the string representations of the data of the elements of the
- *              list. If the list is empty, the string representation is:
- * 
- *                GLLList(None)
- * 
- *              If the list has less than eight elements, the string
- *              representation is in the following form:
- * 
- *                GLLList(data1, data2, data3, data4, data5, data6, data7)
- * 
- *              If the list is NULL, the function returns zero and sets the
- *              error code to LIST_NULL.
- * 
- *              If the error is NULL, the function does not set the error.
- * 
- *              CAUTION: This function is for internal use only and should not
- *              be called from outside of the library.
- * 
- * Parameters:
- *  - list: The list for which we calculate the size of the string.
- *  - error: A pointer to a variable of type GLLError, where we store the
- *           error code if an error occurs.
- * 
- * Return: The size of the string representation of the list, or zero if an
- *         error occurs.
- * 
- * -------------------------------------------------------------------------- */
-static int _gll_string_length(
-  GLLList *list,
-  GLLError *error
-);
-
-
-/* ==========================================================================
  * Algorithms Definitions Section
  * ========================================================================== */
 
-_GLLNode *_gll_create_node(
+_GLLNode *_gll_new_node(
     const void *data,
     const size_t data_size,
     GLLError *error
     ) {
-  *error = NO_ERROR;
+  gll_set_err_code(error, NO_ERROR);  /* Clear error code */
 
-  if (NULL == data) {
-      *error = DATA_NULL;
-
-      return NULL;
+  if (NULL == data) {  /* Data is NULL */
+    gll_set_err_code(error, DATA_NULL);
+    return NULL;  /* ... nothing to do */
   }
 
-  _GLLNode *node = calloc(1, sizeof(_GLLNode));
+  _GLLNode *node = gll_calloc(1, sizeof(_GLLNode), error);
   if (NULL == node) {
-      *error = CALLOC_ERROR;
-
-      return NULL;
+    return NULL;
   }
 
-  node->data = calloc(1, data_size);
-      if (NULL == node->data) {
-      *error = CALLOC_ERROR;
-
-      free(node);
-      return NULL;
+  node->data = gll_calloc(1, data_size, error);
+  if (NULL == node) {
+    free(node);  /* Release the node */
+    return NULL;
   }
 
+  /* Copy the data to the node */
   memcpy(node->data, data, data_size);
 
   return node;
 }
 
-GLLList *gll_create(
+GLLList *gll_new_list(
     const size_t data_size,
-    int (*data_to_string)(char **buffer, void *data, GLLError *error),
+    const char *(*data_str)(void *data, GLLError *error),
     char (*data_compare)(void *data1, void *data2),
     GLLError *error
     ) {
-  if (NULL != error) {
-    *error = NO_ERROR; /* Set error to default value */
+  gll_set_err_code(error, NO_ERROR);  /* Clear error code */
+
+  if (0 == data_size) {  /* Don't know how many bytes to allocate */
+    gll_set_err_code(error, DATA_SIZE_ZERO);
+    return NULL;  /* ... bail out */
   }
 
-  if (0 == data_size) {
-    if (NULL != error) {
-      *error = DATA_SIZE_ZERO;
-    }
-
-    return NULL;
+  if (NULL == data_str) {  /* This is a must-have function */
+    gll_set_err_code(error, DATA_STR_NULL);
+    return NULL;  /* ... bail out */
   }
 
-  if (NULL == data_to_string) {
-    if (NULL != error) {
-      *error = DATA_TO_STRING_NULL;
-    }
-
-    return NULL;
+  if (NULL == data_compare) {  /* ... so is this one */
+    gll_set_err_code(error, DATA_COMPARE_NULL);
+    return NULL;  /* ... bail out */
   }
 
-  if (NULL == data_compare) {
-    if (NULL != error) {
-      *error = DATA_COMPARE_NULL;
-    }
-
-    return NULL;
+  GLLList *heap = gll_calloc(1, sizeof(GLLList), error);
+  /* Check if memory allocation failed */
+  if (NULL == heap) {  /* ... memory allocation failed */
+    return NULL;  /* ... bail out */
   }
 
-  GLLList *heap = calloc(1, sizeof(GLLList));
-  if (heap == NULL) {
-    if (NULL != error) {
-      *error = CALLOC_ERROR;
-    }
-
-    return NULL;
-  }
-
+  /* Initialize the list */
   heap->data_size = data_size;
-  heap->data_to_string = data_to_string;
+  heap->data_str = data_str;
   heap->data_compare = data_compare;
 
   return heap;
@@ -186,31 +122,27 @@ GLLList *gll_push_front(
     const void *data,
     GLLError *error
   ) {
-  if (NULL != error) {
-    *error = NO_ERROR; /* Set error to default value */
-  }
+  gll_set_err_code(error, NO_ERROR);  /* Clear error code */
 
+  /* A guard clause to check if the list is NULL */
   if (NULL == list) {
-    if (NULL != error) {
-      *error = LIST_NULL;
-    }
-
+    gll_set_err_code(error, LIST_NULL);
     return list;
   }
 
+  /* A guard clause to check if the data is NULL */
   if (NULL == data) {
-    if (NULL != error) {
-      *error = DATA_NULL;
-    }
-
+    gll_set_err_code(error, DATA_NULL);
     return list;
   }
 
-  _GLLNode *node = _gll_create_node(data, list->data_size, error);
-  if (NULL == node) {
-    return list;
+  _GLLNode *node = _gll_new_node(data, list->data_size, error);
+  /* Check if memory allocation failed */
+  if (NULL == node) {  /* ... memory allocation failed */
+    return list;  /* ... bail out */
   }
 
+  /* Put the new node at the front of the list */
   if (0 == list->size) {
     list->head = node;
     list->tail = node;
@@ -219,7 +151,7 @@ GLLList *gll_push_front(
     list->head = node;
   }
 
-  list->size++;
+  list->size++;  /* Update the size of the list */
 
   return list;
 }
@@ -229,31 +161,27 @@ GLLList *gll_push_back(
     const void *data,
     GLLError *error
   ) {
-  if (NULL != error) {
-    *error = NO_ERROR; /* Set error to default value */
-  }
+  gll_set_err_code(error, NO_ERROR);  /* Clear error code */
 
+  /* A guard clause to check if the list is NULL */
   if (NULL == list) {
-    if (NULL != error) {
-      *error = LIST_NULL;
-    }
-
+    gll_set_err_code(error, LIST_NULL);
     return list;
   }
 
+  /* A guard clause to check if the data is NULL */
   if (NULL == data) {
-    if (NULL != error) {
-      *error = DATA_NULL;
-    }
-
+    gll_set_err_code(error, DATA_NULL);
     return list;
   }
 
-  _GLLNode *node = _gll_create_node(data, list->data_size, error);
-  if (NULL == node) {
-    return list;
+  _GLLNode *node = _gll_new_node(data, list->data_size, error);
+  /* Check if memory allocation failed */
+  if (NULL == node) {  /* ... memory allocation failed */
+    return list;  /* ... bail out */
   }
 
+  /* Put the new node at the back of the list */
   if (0 == list->size) {
     list->head = node;
     list->tail = node;
@@ -262,32 +190,27 @@ GLLList *gll_push_back(
     list->tail = node;
   }
 
-  list->size++;
+  list->size++;  /* Update the size of the list */
 
   return list;
 }
 
 void *gll_pop_front(GLLList *list, GLLError *error) {
-  if (NULL != error) {
-    *error = NO_ERROR; /* Set error to default value */
-  }
+  gll_set_err_code(error, NO_ERROR);  /* Clear error code */
 
+  /* A guard clause to check if the list is NULL */
   if (NULL == list) {
-    if (NULL != error) {
-      *error = LIST_NULL;
-    }
-
-    return NULL;
+    gll_set_err_code(error, LIST_NULL);
+    return list;
   }
 
-  if (0 == list->size) {
-    if (NULL != error) {
-      *error = LIST_EMPTY;
-    }
-
-    return NULL;
+  /* A guard clause to check if the list is empty */
+  if (0 == list->size) { /* ... the list is empty */
+    gll_set_err_code(error, LIST_EMPTY);
+    return NULL;  /* ... nothing to do */
   }
 
+  /* Detach the first node from the list */
   _GLLNode *node = list->head;
   if (1 == list->size) {
     list->head = NULL;
@@ -295,46 +218,32 @@ void *gll_pop_front(GLLList *list, GLLError *error) {
   } else {
     list->head = list->head->next;
   }
-  list->size--;
 
-  void *data = calloc(1, list->data_size);
-  if (NULL == data) {
-    if (NULL != error) {
-      *error = CALLOC_ERROR;
-    }
+  list->size--;  /* ... update the size of the list */
 
-    return NULL;
-  }
+  void *data = node->data;  /* ... get the data from the node */
 
-  memcpy(data, node->data, list->data_size);
+  free(node);  /* ... release the node, but not the data */
 
-  free(node->data);
-  free(node);
-
-  return data;
+  return data;  /* ... return the data */
 }
 
-GLLList *gll_delete_at_front(GLLList *list, GLLError *error) {
-  if (NULL != error) {
-    *error = NO_ERROR; /* Set error to default value */
-  }
+GLLList *gll_delete_front(GLLList *list, GLLError *error) {
+  gll_set_err_code(error, NO_ERROR);  /* Clear error code */
 
+  /* A guard clause to check if the list is NULL */
   if (NULL == list) {
-    if (NULL != error) {
-      *error = LIST_NULL;
-    }
-
+    gll_set_err_code(error, LIST_NULL);
     return list;
   }
 
-  if (0 == list->size) {
-    if (NULL != error) {
-      *error = LIST_EMPTY;
-    }
-
-    return list;
+  /* A guard clause to check if the list is empty */
+  if (0 == list->size) { /* ... the list is empty */
+    gll_set_err_code(error, LIST_EMPTY);
+    return NULL;  /* ... nothing to do */
   }
 
+  /* Detach the first node from the list */
   _GLLNode *node = list->head;
   if (1 == list->size) {
     list->head = NULL;
@@ -342,34 +251,30 @@ GLLList *gll_delete_at_front(GLLList *list, GLLError *error) {
   } else {
     list->head = list->head->next;
   }
-  list->size--;
 
-  gll_node_free(node);
+  list->size--;  /* ... update the size of the list */
+
+  gll_free_node(node);  /* ... release the node and the data */
 
   return list;
 }
 
 void *gll_pop_back(GLLList *list, GLLError *error) {
-  if (NULL != error) {
-    *error = NO_ERROR; /* Set error to default value */
-  }
+  gll_set_err_code(error, NO_ERROR);  /* Clear error code */
 
+  /* A guard clause to check if the list is NULL */
   if (NULL == list) {
-    if (NULL != error) {
-      *error = LIST_NULL;
-    }
-
-    return NULL;
+    gll_set_err_code(error, LIST_NULL);
+    return list;
   }
 
-  if (0 == list->size) {
-    if (NULL != error) {
-      *error = LIST_EMPTY;
-    }
-
-    return NULL;
+  /* A guard clause to check if the list is empty */
+  if (0 == list->size) { /* ... the list is empty */
+    gll_set_err_code(error, LIST_EMPTY);
+    return NULL;  /* ... nothing to do */
   }
 
+  /* Detach the last node from the list */
   _GLLNode *node = list->tail;
   if (1 == list->size) {
     list->head = NULL;
@@ -383,46 +288,32 @@ void *gll_pop_back(GLLList *list, GLLError *error) {
     list->tail = current;
     list->tail->next = NULL;
   }
-  list->size--;
 
-  void *data = calloc(1, list->data_size);
-  if (NULL == data) {
-    if (NULL != error) {
-      *error = CALLOC_ERROR;
-    }
+  list->size--;  /* ... update the size of the list */
 
-    return NULL;
-  }
+  void *data = node->data;  /* ... get the data from the node */
 
-  memcpy(data, node->data, list->data_size);
+  free(node);  /* ... release the node, but not the data */
 
-  free(node->data);
-  free(node);
-
-  return data;
+  return data;  /* ... return the data */
 }
 
 GLLList *gll_delete_at_back(GLLList *list, GLLError *error) {
-  if (NULL != error) {
-    *error = NO_ERROR; /* Set error to default value */
-  }
+  gll_set_err_code(error, NO_ERROR);  /* Clear error code */
 
+  /* A guard clause to check if the list is NULL */
   if (NULL == list) {
-    if (NULL != error) {
-      *error = LIST_NULL;
-    }
-
+    gll_set_err_code(error, LIST_NULL);
     return list;
   }
 
-  if (0 == list->size) {
-    if (NULL != error) {
-      *error = LIST_EMPTY;
-    }
-
-    return list;
+  /* A guard clause to check if the list is empty */
+  if (0 == list->size) { /* ... the list is empty */
+    gll_set_err_code(error, LIST_EMPTY);
+    return NULL;  /* ... nothing to do */
   }
 
+  /* Detach the last node from the list */
   _GLLNode *node = list->tail;
   if (1 == list->size) {
     list->head = NULL;
@@ -436,73 +327,67 @@ GLLList *gll_delete_at_back(GLLList *list, GLLError *error) {
     list->tail = current;
     list->tail->next = NULL;
   }
-  list->size--;
 
-  gll_node_free(node);
+  list->size--;  /* ... update the size of the list */
 
-  return list;
+  gll_free_node(node);  /* ... release the node and the data */
+
+  return list;  /* ... return the list */
 }
 
-void gll_node_free(_GLLNode *node) {
-  if (NULL == node) {
+void gll_free_node(_GLLNode *node) {
+  if (NULL == node) {  /* Nothing to do */
     return;
   }
 
-  if (NULL != node->data) {
+  if (NULL != node->data) {  /* Release the data */
     free(node->data);
   }
 
-  free(node);
+  free(node);  /* ... release the node */
 }
 
-void gll_free(GLLList *list) {
-  if (NULL == list) {
+void gll_free_list(GLLList *list) {
+  if (NULL == list) {  /* Nothing to do */
     return;
   }
 
-  if (0 == list->size) {
+  if (0 == list->size) {  /* ... so as here */
     free(list);
 
     return;
   }
 
+  /* Release all the nodes in the list */
   _GLLNode *current = list->head;
   while (NULL != current) {
     _GLLNode *next = current->next;
-    gll_node_free(current);
+    gll_free_node(current);
     current = next;
   }
 
-  free(list);
+  free(list);  /* ... release the list */
 }
 
 bool gll_is_empty(GLLList *list, GLLError *error) {
-  if (NULL != error) {
-    *error = NO_ERROR; /* Set error to default value */
-  }
+  gll_set_err_code(error, NO_ERROR);  /* Clear error code */
 
+  /* A guard clause to check if the list is NULL */
   if (NULL == list) {
-    if (NULL != error) {
-      *error = LIST_NULL;
-    }
-
-    return false;
+    gll_set_err_code(error, LIST_NULL);
+    return list;
   }
 
   return 0 == list->size;
 }
 
 size_t gll_size(GLLList *list, GLLError *error) {
-  if (NULL != error) {
-    *error = NO_ERROR; /* Set error to default value */
-  }
+  gll_set_err_code(error, NO_ERROR);  /* Clear error code */
 
+  /* A guard clause to check if the list is NULL */
   if (NULL == list) {
-    if (NULL != error) {
-      *error = LIST_NULL;
-    }
-
-    return 0;
+    gll_set_err_code(error, LIST_NULL);
+    return SIZE_MAX;
   }
 
   return list->size;
@@ -513,34 +398,27 @@ size_t gll_contains(
     void *data,
     GLLError *error
   ) {
-  if (NULL != error) {
-    *error = NO_ERROR; /* Set error to default value */
-  }
+  gll_set_err_code(error, NO_ERROR);  /* Clear error code */
 
+  /* A guard clause to check if the list is NULL */
   if (NULL == list) {
-    if (NULL != error) {
-      *error = LIST_NULL;
-    }
-
+    gll_set_err_code(error, LIST_NULL);
     return SIZE_MAX;
   }
 
+  /* A guard clause to check if the data is NULL */
   if (NULL == data) {
-    if (NULL != error) {
-      *error = DATA_NULL;
-    }
-
+    gll_set_err_code(error, DATA_NULL);
     return SIZE_MAX;
   }
 
+  /* A guard clause to check if the list is empty */
   if (0 == list->size) {
-    if (NULL != error) {
-      *error = LIST_EMPTY;
-    }
-
+    gll_set_err_code(error, LIST_EMPTY);
     return SIZE_MAX;
   }
 
+  /* Search for the data in the list */
   _GLLNode *current = list->head;
   size_t index = 0;
   while (NULL != current) {
@@ -553,50 +431,40 @@ size_t gll_contains(
   }
 
   /* If we reach this point, the data is not in the list */
-  if (NULL != error) {
-    *error = DATA_NOT_FOUND;
-  }
+  gll_set_err_code(error, DATA_NOT_FOUND);
 
   return SIZE_MAX;
 }
 
-size_t gll_count_occurrences(
+size_t gll_occurrences(
     GLLList *list,
     void *data,
     GLLError *error
   ) {
-  if (NULL != error) {
-    *error = NO_ERROR; /* Set error to default value */
-  }
+  gll_set_err_code(error, NO_ERROR);  /* Clear error code */
 
-  size_t count = 0;  /* We return zero if there is an error, or if the
-                        occurrence count is zero.
-                     */
+  /* Return zero if there is an error, or if the count is zero. */
+  size_t count = 0;
 
+  /* A guard clause to check if the list is NULL */
   if (NULL == list) {
-    if (NULL != error) {
-      *error = LIST_NULL;
-    }
-
+    gll_set_err_code(error, LIST_NULL);
     return count;
   }
 
+  /* A guard clause to check if the data is NULL */
   if (NULL == data) {
-    if (NULL != error) {
-      *error = DATA_NULL;
-    }
-
+    gll_set_err_code(error, DATA_NULL);
     return count;
   }
 
+  /* A guard clause to check if the list is empty */
   if (0 == list->size) {
-    if (NULL != error) {
-      *error = LIST_EMPTY;
-    }
-
+    gll_set_err_code(error, LIST_EMPTY);
     return count;
   }
 
+  /* Count the occurrences of the data in the list */
   _GLLNode *current = list->head;
   while (NULL != current) {
     if (0 == list->data_compare(data, current->data)) {
@@ -609,52 +477,40 @@ size_t gll_count_occurrences(
   return count;
 }
 
-void *gll_get_data(GLLList *list, size_t index, GLLError *error) {
-  if (NULL != error) {
-    *error = NO_ERROR; /* Set error to default value */
-  }
+void *gll_peek(GLLList *list, size_t index, GLLError *error) {
+  gll_set_err_code(error, NO_ERROR);  /* Clear error code */
 
+  /* A guard clause to check if the list is NULL */
   if (NULL == list) {
-    if (NULL != error) {
-      *error = LIST_NULL;
-    }
-
+    gll_set_err_code(error, LIST_NULL);
     return NULL;
   }
 
+  /* A guard clause to check if the list is empty */
   if (0 == list->size) {
-    if (NULL != error) {
-      *error = LIST_EMPTY;
-    }
-
+    gll_set_err_code(error, LIST_EMPTY);
     return NULL;
   }
 
+  /* A guard clause to check if the index is out of bounds */
   if (index < 0 || index >= list->size) {
-    if (NULL != error) {
-      *error = INDEX_OUT_OF_BOUNDS;
-    }
-
+    gll_set_err_code(error, INDEX_OUT_OF_RANGE);
     return NULL;
   }
 
+  /* Get the data at the specified index */
   _GLLNode *current = list->head;
   for (size_t i = 0; i < index; i++) {
     current = current->next;
   }
 
-  void *data = calloc(1, list->data_size);
-  if (NULL == data) {
-    if (NULL != error) {
-      *error = CALLOC_ERROR;
-    }
-
-    return NULL;
+  /* ... copy the data to a new memory location */
+  void *data = gll_calloc(1, list->data_size, error);
+  if (NULL != data) {
+    memcpy(data, current->data, list->data_size);
   }
 
-  memcpy(data, current->data, list->data_size);
-
-  return data;
+  return data;  /* ... return the data */
 }
 
 _GLLNode *gll_get_node(
@@ -662,301 +518,214 @@ _GLLNode *gll_get_node(
     size_t index,
     GLLError *error
   ) {
-  if (NULL != error) {
-    *error = NO_ERROR; /* Set error to default value */
-  }
+  gll_set_err_code(error, NO_ERROR);  /* Clear error code */
 
+  /* A guard clause to check if the list is NULL */
   if (NULL == list) {
-    if (NULL != error) {
-      *error = LIST_NULL;
-    }
-
+    gll_set_err_code(error, LIST_NULL);
     return NULL;
   }
 
+  /* A guard clause to check if the list is empty */
   if (0 == list->size) {
-    if (NULL != error) {
-      *error = LIST_EMPTY;
-    }
-
+    gll_set_err_code(error, LIST_EMPTY);
     return NULL;
   }
 
+  /* A guard clause to check if the index is out of bounds */
   if (index < 0 || index >= list->size) {
-    if (NULL != error) {
-      *error = INDEX_OUT_OF_BOUNDS;
-    }
-
+    gll_set_err_code(error, INDEX_OUT_OF_RANGE);
     return NULL;
   }
 
+  /* Get the node at the specified index */
   _GLLNode *current = list->head;
   for (size_t i = 0; i < index; i++) {
     current = current->next;
   }
 
-  return current;
+  return current;  /* ... return the node */
 }
 
-static int _gll_string_length(GLLList *list, GLLError *error) {
-  if (NULL != error) {
-    *error = NO_ERROR; /* Set error to default value */
-  }
-  int size = 0;  /* We return zero if there is an error */
-
-  /* We can't do anything if the list is NULL */
-  if (NULL == list) {
-    if (NULL != error) {
-      *error = LIST_NULL;
-    }
-
-    return size;
-  }
-
-  char *data_str = NULL;  /* Buffer for the string representation of the data */
-
-  size += 10; /* "GLLList(" */
-
-  if (0 == list->size) {
-    size += 4;  /* "None" */
-  } else {
-    /* Calculate the size of the data of the first three or less elements */
-    for(size_t i = 0; 3 > i && list->size > i; i++) {
-      int data_str_size = list->data_to_string(
-        &data_str,
-        gll_get_data(list, i, NULL),
-        error
-      );
-
-      if (data_str_size <= 0) {
-        size = 0;
-        return size;
-      }
-
-      size += data_str_size;
-      free(data_str);
-      data_str = NULL;
-
-      if (list->size - 1 != i) {
-        size += 2; /* ", " */
-      }
-    }
-
-    /* Calculate the size of the data of rest of the elements, if there are 
-       more than three
-    */
-    if (3 < list->size) {
-      if (8 > list->size) {
-        /* Calculate the size of the data of the rest of the elements, if list 
-           has up to seven elements
-        */
-        for(size_t i = 3; list->size > i; i++) {
-          int data_str_size = list->data_to_string(
-            &data_str,
-            gll_get_data(list, i, NULL),
-            error
-          );
-
-          if (data_str_size <= 0) {
-            size = 0;
-            return size;
-          }
-
-          size += data_str_size;
-          free(data_str);
-          data_str = NULL;
-
-          if(list->size - 1 > i) {
-            size += 2; /* ", " */
-          }
-        }
-      } else {
-        /* Calculate the size of the data of the last three elements, if list 
-           has more than seven elements. We use three dots to indicate that
-           there are more elements
-        */
-        size += 5; /* "..., " */
-        for(size_t i = list->size - 3; list->size > i; i++) {
-          int data_str_size = list->data_to_string(
-            &data_str,
-            gll_get_data(list, i, NULL),
-            error
-          );
-
-          if (data_str_size <= 0) {
-            size = 0;
-            return size;
-          }
-
-          size += data_str_size;
-          free(data_str);
-          data_str = NULL;
-
-          if(list->size - 1 > i) {
-            size += 2; /* ", " */
-          }
-        }
-      }
-    }
-  }
-
-  size += 2; /* ")" */
-
-  return size;
-}
-
-int gll_to_string(
-    char **buffer,
+const char *gll_list_str(
     GLLList *list,
     GLLError *error
   ) {
-  if (NULL != error) {
-    *error = NO_ERROR; /* Set error to default value */
-  }
-  int size = 0;  /* We return zero if there is an error */
+  char *buffer = NULL;  /* Buffer for the string representation of the list */
+
+  gll_set_err_code(error, NO_ERROR);  /* Clear error code */
 
   /* We can't do anything if the list is NULL ... */
   if (NULL == list) {
-    if (NULL != error) {
-      *error = LIST_NULL;
-    }
-
-    return size;
+    gll_set_err_code(error, LIST_NULL);
+    return (const char *)buffer;  /* ... so we return NULL */
   }
 
-  /* ... or if the buffer is NULL */
+  /* Try to allocate memory for the buffer */
+  buffer = gll_calloc(9, sizeof(char), error);
   if (NULL == buffer) {
-    if (NULL != error) {
-      *error = DESTINATION_BUFFER_NULL;
-    }
-
-    return size;
+    return (const char *)buffer;  /* ... memory allocation failed */
   }
 
-  /* First we need to calculate the size of the buffer */
-  size = _gll_string_length(list, error);
-
-  if (size <= 0) {
-    return size;
-  }
-
-  /* Allocate memory for the buffer */
-  *buffer = calloc(size, sizeof(char));
-  if (NULL == *buffer) {
-    if (NULL != error) {
-      *error = CALLOC_ERROR;
-    }
-
-    return 0;
-  }
-
-  /* Copy the string representation of the list to the buffer */
-  int offset = 0;
-  offset += snprintf(*buffer + offset, 11, "GLLList(");
+  snprintf(buffer, 9, "GLLList(");  /* List string prefix */
 
   if (0 == list->size) {
-    offset += snprintf(*buffer + offset, 5, "None");
-  } else {
-    char *data_str = NULL;  /* Buffer for the string representation of the data */
+    strncat(buffer, "None)", strlen("None)"));  /* Empty list */
+    return (const char *)buffer;  /* ... nothing more to do */
+  }
 
-    /* Copy the string representation of the data of the first three or less 
-       elements
-    */
-    for(size_t i = 0; 3 > i && list->size > i; i++) {
-      int data_str_size = list->data_to_string(
-        &data_str,
-        gll_get_data(list, i, NULL),
-        error
-      );
+  /* Data string buffer */
+  char *data_str = NULL;
 
-      if (data_str_size <= 0) {
-        free(*buffer);
-        *buffer = NULL;
-        return 0;
-      }
+  /* If the list contains up to 7 elements, we populate the buffer with the
+     data strings of the elements in the list.
+   */
+  if (list->size <= 7) {
+    data_str = (char *) _gll_list_str_range(list, 0, list->size - 1, error);
 
-      offset += snprintf(*buffer + offset, data_str_size + 1, "%s", data_str);
-      free(data_str);
-      data_str = NULL;
-
-      if (list->size - 1 != i) {
-        offset += snprintf(*buffer + offset, 3, ", ");
-      }
+    if (NULL == data_str) {  /* ... memory allocation failed */
+      free(buffer);
+      buffer = NULL;
+      return (const char *) buffer;  /* ... bail out */
     }
 
-    /* Copy the string representation of the data of rest of the elements, if 
-       there are more than three
-    */
-    if (3 < list->size) {
-      if (8 > list->size) {
-        /* Copy the string representation of the data of the rest of the 
-           elements, if list has up to seven elements
-        */
-        for(size_t i = 3; list->size > i; i++) {
-          int data_str_size = list->data_to_string(
-            &data_str,
-            gll_get_data(list, i, NULL),
-            error
-          );
+    /* Add the data string to the buffer */
+    strncat(buffer, data_str, strlen(data_str));
+  } else {
+    /* If the list contains more than 7 elements, we populate the buffer with
+       the data strings of the first 3 elements, the last 3 elements, and the
+       ellipsis in between.
+     */
+    data_str = (char *) _gll_list_str_range(list, 0, 2, error);
 
-          if (data_str_size <= 0) {
-            free(*buffer);
-            *buffer = NULL;
-            return 0;
-          }
+    if (NULL == data_str) {  /* ... memory allocation failed */
+      free(buffer);
+      buffer = NULL;
+      return (const char *) buffer;  /* ... bail out */
+    }
 
-          offset += snprintf(
-            *buffer + offset,
-            data_str_size + 1, 
-            "%s", 
-            data_str
-            );
-          free(data_str);
-          data_str = NULL;
+    /* Add the data string to the buffer */
+    strncat(buffer, data_str, strlen(data_str));
+    strncat(buffer, ", ... , ", 8);  /* Ellipsis */
+    free(data_str);
+    data_str = NULL;
 
-          if(list->size - 1 > i) {
-            offset += snprintf(*buffer + offset, 3, ", ");
-          }
-        }
-      } else {
-        /* Copy the string representation of the data of the last three 
-           elements, if list has more than seven elements. We use three dots to 
-           indicate that there are more elements
-        */
-        offset += snprintf(*buffer + offset, 6, "..., ");
-        for(size_t i = list->size - 3; list->size > i; i++) {
-          int data_str_size = list->data_to_string(
-            &data_str,
-            gll_get_data(list, i, NULL),
-            error
-          );
+    data_str = (char *) _gll_list_str_range(list, list->size - 3,
+      list->size - 1, error);
 
-          if (data_str_size <= 0) {
-            free(*buffer);
-            *buffer = NULL;
-            return 0;
-          }
+    if (NULL == data_str) {  /* ... memory allocation failed */
+      free(buffer);
+      buffer = NULL;
+      return (const char *)buffer;  /* ... bail out */
+    }
 
-          offset += snprintf(
-            *buffer + offset,
-            data_str_size + 1,
-            "%s", 
-            data_str
-            );
-          free(data_str);
-          data_str = NULL;
+    /* Add the data string to the buffer */
+    strncat(buffer, data_str, strlen(data_str));
+  }
 
-          if(list->size - 1 > i) {
-            offset += snprintf(*buffer + offset, 3, ", ");
-          }
-        }
+  strncat(buffer, ")", 1);  /* List string postfix */
+
+  return (const char *)buffer;
+}
+
+const char *_gll_list_str_range(
+  GLLList *list,
+  size_t start,
+  size_t end,
+  GLLError *error
+) {
+  char *buffer = NULL;  /* Buffer for the string representation of the list */
+
+  gll_set_err_code(error, NO_ERROR);  /* Clear error code */
+
+  /* We can't do anything if the list is NULL ... */
+  if (NULL == list) {
+    gll_set_err_code(error, LIST_NULL);
+    return (const char *)buffer;  /* ... so we return NULL */
+  }
+
+  /* A guard clause to check if the list is empty */
+  if (0 == list->size) {
+    gll_set_err_code(error, LIST_EMPTY);
+    return (const char *)buffer;  /* ... bail out */
+  }
+
+  /* Check if the start index is out of bounds */
+  if (start > list->size - 1) {
+    gll_set_err_code(error, LOWER_BOUND_OUT_OF_RANGE);
+    return (const char *)buffer;  /* ... bail out */
+  }
+
+  /* Check if the end index is out of bounds */
+  if (end > list->size - 1) {
+    gll_set_err_code(error, UPPER_BOUND_OUT_OF_RANGE);
+    return (const char *)buffer;  /* ... bail out */
+  }
+
+  /* Check if the start index is greater than the end index */
+  if (start > end) {
+    gll_set_err_code(error, BOUNDS_INVERTED);
+    return (const char *)buffer;  /* ... bail out */
+  }
+
+  char *data_str = NULL;  /* Data string buffer */
+
+  /* Populate buffer with the data strings of the elements in the range */
+  for(size_t i = start; end >= i; i++) {
+    data_str = (char *) list->data_str(
+      gll_get_node(list, i, NULL)->data,
+      error
+    );
+
+    if (NULL == data_str) {  /* ... memory allocation failed */
+      free(buffer);
+      buffer = NULL;
+      return (const char *)buffer;  /* ... bail out */
+    }
+
+    /* Add the data string to the buffer */
+    if (start == i) {  /* ... first element in the range */
+      buffer = gll_calloc(strlen(data_str) + 1, sizeof(char), error);
+
+      if (NULL == buffer) {  /* ... memory allocation failed */
+        free(data_str);
+        data_str = NULL;
+        return (const char *)buffer;  /* ... bail out */
       }
+
+      /* Copy the data string to the buffer */
+      snprintf(buffer, strlen(data_str) + 1, "%s", data_str);
+    } else {
+      strncat(buffer, ", ", 2); /* ... delimiter */
+      strncat(buffer, data_str, strlen(data_str));
+    }
+
+    /* Free the data string buffer */
+    free(data_str);
+    data_str = NULL;
+  }
+
+  return (const char *)buffer;
+}
+
+void gll_set_err_code(GLLError *status, GLLError code) {
+  if (NULL != status) {
+    *status = code;
+  }
+};
+
+void *gll_calloc(size_t number, size_t size, GLLError *status) {
+  void *buffer = calloc(number, size);
+
+  if (NULL == buffer) {
+    if (ENOMEM == errno) {
+      gll_set_err_code(status, NO_MEMORY);
+    } else {
+      gll_set_err_code(status, UNKNOWN_ERROR);
     }
   }
 
-  offset += snprintf(*buffer + offset, 2, ")");
-
-  return size;
+  return buffer;
 }
 
 /* End of generic_Linked_list.c */

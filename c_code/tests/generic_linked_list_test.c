@@ -66,7 +66,7 @@
  * User Defined Function Declarations Section
  * ========================================================================== */
 
-int int_to_string(char **buffer, void *data, GLLError *error);
+const char *int_str_repr(void *data, GLLError *error);
 char data_compare(void *data1, void *data2);
 
 
@@ -80,6 +80,8 @@ static MunitResult create_node_test(const MunitParameter params[],
 static MunitResult create_list_test(const MunitParameter params[],
   void* fixture);
 static MunitResult free_list_test(const MunitParameter params[],
+  void* fixture);
+static MunitResult list_range_to_string_test(const MunitParameter params[],
   void* fixture);
 
 /* Tets array --------------------------------------------------------------- */
@@ -103,6 +105,14 @@ MunitTest tests[] = {
   {
     "/free-list", /* name */
     free_list_test, /* test */
+    NULL, /* setup */
+    NULL, /* tear_down */
+    MUNIT_TEST_OPTION_NONE, /* options */
+    NULL /* parameters */
+  },
+  {
+    "/list-range-to-string", /* name */
+    list_range_to_string_test, /* test */
     NULL, /* setup */
     NULL, /* tear_down */
     MUNIT_TEST_OPTION_NONE, /* options */
@@ -134,23 +144,18 @@ int main(int argc, char *argv[]) {
  * User Defined Function Definitions Section
  * ========================================================================== */
 
-int int_to_string(char **buffer, void *data, GLLError *error) {
-  if (NULL != error) {
-    *error = NO_ERROR;
-  }
+const char *int_str_repr(void *data, GLLError *error) {
+  gll_set_err_code(error, NO_ERROR);  /* Clear error code */
+
   int *int_data = (int *) data;
   int size = snprintf(NULL, 0, "%d", *int_data);
-  *buffer = calloc(size + 1, sizeof(char));
+  char *buffer = gll_calloc(size + 1, sizeof(char), error);
 
-  if (*buffer == NULL) {
-    if (NULL != error) {
-      *error = CALLOC_ERROR;
-    }
-
-    return -1;
+  if (NULL != buffer) {
+    snprintf(buffer, size + 1, "%d", *int_data);
   }
 
-  return snprintf(*buffer, size + 1, "%d", *int_data);
+  return buffer;
 }
 
 char data_compare(void *data1, void *data2) {
@@ -183,7 +188,7 @@ static MunitResult create_node_test(
   GLLError error = NO_ERROR;
 
   /* Test passing NULL data */
-  _GLLNode *node = _gll_create_node(NULL, 0, &error);
+  _GLLNode *node = _gll_new_node(NULL, 0, &error);
   munit_assert_int(error, ==, DATA_NULL);
   munit_assert_ptr_null(node);
 
@@ -191,7 +196,7 @@ static MunitResult create_node_test(
   error = NO_ERROR;
 
   /* Test invoking with valid data */
-  node = _gll_create_node(&data, sizeof(int), &error);
+  node = _gll_new_node(&data, sizeof(int), &error);
   munit_assert_int(error, ==, NO_ERROR);
   munit_assert_ptr_not_null(node);
   munit_assert_ptr_not_null(node->data);
@@ -202,12 +207,10 @@ static MunitResult create_node_test(
   error = NO_ERROR;
 
   /* Test if the function to convert data to string works */
-  char *buffer = NULL;
-  int len = 0;
-  len = int_to_string(&buffer, node->data, &error);
+  const char *buffer = int_str_repr(node->data, &error);
   munit_assert_int(error, ==, NO_ERROR);
+  munit_assert_size(strlen(buffer), ==, strlen("42"));
   munit_assert_string_equal(buffer, "42");
-  munit_assert_size(strlen(buffer), ==, len);
 
   /* Clean up */
   free(node->data);
@@ -227,20 +230,20 @@ static MunitResult create_list_test(
   GLLError error = NO_ERROR;
 
   /* Test passing zero data size */
-  GLLList *list = gll_create(0, NULL, NULL, &error);
+  GLLList *list = gll_new_list(0, NULL, NULL, &error);
   munit_assert_int(error, ==, DATA_SIZE_ZERO);
   munit_assert_ptr_null(list);
 
-  /* Test passing NULL data_to_string */
-  list = gll_create(sizeof(int), NULL, NULL, &error);
-  munit_assert_int(error, ==, DATA_TO_STRING_NULL);
+  /* Test passing NULL data_str */
+  list = gll_new_list(sizeof(int), NULL, NULL, &error);
+  munit_assert_int(error, ==, DATA_STR_NULL);
   munit_assert_ptr_null(list);
 
   /* Reset error */
   error = NO_ERROR;
 
   /* Test passing NULL data_compare */
-  list = gll_create(sizeof(int), int_to_string, NULL, &error);
+  list = gll_new_list(sizeof(int), int_str_repr, NULL, &error);
   munit_assert_int(error, ==, DATA_COMPARE_NULL);
   munit_assert_ptr_null(list);
 
@@ -248,14 +251,14 @@ static MunitResult create_list_test(
   error = NO_ERROR;
 
   /* Test invoking with valid pointers */
-  list = gll_create(sizeof(int), int_to_string, data_compare, &error);
+  list = gll_new_list(sizeof(int), int_str_repr, data_compare, &error);
   munit_assert_int(error, ==, NO_ERROR);
   munit_assert_ptr_not_null(list);
   munit_assert_ptr_null(list->head);
   munit_assert_ptr_null(list->tail);
   munit_assert_size(list->size, ==, 0);
   munit_assert_size(list->data_size, ==, sizeof(int));
-  munit_assert_ptr_not_null(list->data_to_string);
+  munit_assert_ptr_not_null(list->data_str);
   munit_assert_ptr_not_null(list->data_compare);
 
   /* Clean up */
@@ -273,32 +276,32 @@ static MunitResult free_list_test(
   (void *) fixture; /* unused */
 
   /* Test passing NULL list */
-  gll_free(NULL);
+  gll_free_list(NULL);
 
   /* Test passing an empty list */
   GLLError error = NO_ERROR;
-  GLLList *list = gll_create(sizeof(int), int_to_string, data_compare, &error);
+  GLLList *list = gll_new_list(sizeof(int), int_str_repr, data_compare, &error);
   munit_assert_int(error, ==, NO_ERROR);
-  gll_free(list);
+  gll_free_list(list);
 
   /* Test passing a list with one element */
   error = NO_ERROR;
-  list = gll_create(sizeof(int), int_to_string, data_compare, &error);
+  list = gll_new_list(sizeof(int), int_str_repr, data_compare, &error);
   munit_assert_int(error, ==, NO_ERROR);
-  _GLLNode *node = _gll_create_node(&(int){42}, sizeof(int), &error);
+  _GLLNode *node = _gll_new_node(&(int){42}, sizeof(int), &error);
   munit_assert_int(error, ==, NO_ERROR);
   munit_assert_int(*((int *) node->data), ==, 42);
   list->head = node;
   list->tail = node;
   list->size = 1;
-  gll_free(list);
+  gll_free_list(list);
 
   /* Test passing a list with multiple elements */
   error = NO_ERROR;
-  list = gll_create(sizeof(int), int_to_string, data_compare, &error);
+  list = gll_new_list(sizeof(int), int_str_repr, data_compare, &error);
   munit_assert_int(error, ==, NO_ERROR);
   for (int i = 0; i < 10; i++) {
-    node = _gll_create_node(&(int){i}, sizeof(int), &error);
+    node = _gll_new_node(&(int){i}, sizeof(int), &error);
     munit_assert_int(error, ==, NO_ERROR);
     munit_assert_int(*((int *) node->data), ==, i);
     if (i == 0) {
@@ -309,14 +312,14 @@ static MunitResult free_list_test(
     list->tail = node;
     list->size++;
   }
-  gll_free(list);
+  gll_free_list(list);
 
   /* Test passing a list with huge number of elements */
   error = NO_ERROR;
-  list = gll_create(sizeof(int), int_to_string, data_compare, &error);
+  list = gll_new_list(sizeof(int), int_str_repr, data_compare, &error);
   munit_assert_int(error, ==, NO_ERROR);
   for (int i = 0; i < 1000000; i++) {
-    node = _gll_create_node(&(int){i}, sizeof(int), &error);
+    node = _gll_new_node(&(int){i}, sizeof(int), &error);
     munit_assert_int(error, ==, NO_ERROR);
     munit_assert_int(*((int *) node->data), ==, i);
     if (i == 0) {
@@ -327,7 +330,74 @@ static MunitResult free_list_test(
     list->tail = node;
     list->size++;
   }
-  gll_free(list);
+  gll_free_list(list);
+
+  return MUNIT_OK;
+}
+
+/* gll_to_string test ------------------------------------------------------- */
+static MunitResult list_range_to_string_test(
+    const MunitParameter params[],
+    void* fixture
+  ) {
+  (MunitParameter *) params; /* unused */
+  (void *) fixture; /* unused */
+
+  GLLError error = NO_ERROR;
+
+  /* Test passing NULL list */
+  _gll_list_str_range(NULL, 0, 0, &error);
+  munit_assert_int(error, ==, LIST_NULL);
+
+
+  /* Test passing an empty list */
+  error = NO_ERROR;
+  GLLList *list = gll_new_list(sizeof(int), int_str_repr, data_compare, &error);
+  munit_assert_int(error, ==, NO_ERROR);
+  _gll_list_str_range(list, 0, 0, &error);
+  munit_assert_int(error, ==, LIST_EMPTY);
+
+  /* Test one element list -------------------------------------------------- */
+  gll_free_list(list);
+  error = NO_ERROR;
+
+  int data = munit_rand_int_range(-10000, 10000);
+  _GLLNode *node = _gll_new_node(&data, sizeof(int), &error);
+  munit_assert_int(error, ==, NO_ERROR);
+  munit_assert_int(*((int *) node->data), ==, data);
+  list->head = node;
+  list->tail = node;
+  list->size = 1;
+
+  /* Test passing a lower index out of range */
+  _gll_list_str_range(list, 1, 0, &error);
+  munit_assert_int(error, ==, LOWER_BOUND_OUT_OF_RANGE);
+
+  /* Test passing an upper index out of range */
+  error = NO_ERROR;
+  _gll_list_str_range(list, 0, 1, &error);
+  munit_assert_int(error, ==, UPPER_BOUND_OUT_OF_RANGE);
+
+  /* Test with valid indexes */
+  error = NO_ERROR;
+  const char *buffer = _gll_list_str_range(list, 0, 0, &error);
+  munit_assert_int(error, ==, NO_ERROR);
+  munit_assert_ptr_not_null(buffer);
+
+  int dl = snprintf(NULL, 0, "%d", data);
+  char *expected = gll_calloc(dl + 1, sizeof(char), &error);
+  munit_assert_int(error, ==, NO_ERROR);
+  munit_assert_ptr_not_null(expected);
+  snprintf(expected, dl + 1, "%d", data);
+  munit_assert_size(strlen(expected), ==, strlen(buffer));
+  munit_assert_string_equal(expected, buffer);
+
+  /* Test passing a list with 6 elements */
+
+  /* Clean up */
+  free(expected);
+  free((void *) buffer);
+  gll_free_list(list);
 
   return MUNIT_OK;
 }

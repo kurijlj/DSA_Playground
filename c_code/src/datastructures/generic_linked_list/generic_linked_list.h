@@ -54,30 +54,36 @@
  * Error Codes Section
  * ========================================================================== */
 
-typedef enum _generic_ll_error {
+typedef enum _gll_error {
+  UNKNOWN_ERROR,
   NO_ERROR,
-  CALLOC_ERROR,
+  NO_MEMORY,
   DATA_SIZE_ZERO,
-  DATA_TO_STRING_NULL,
+  DATA_STR_NULL,
   DATA_COMPARE_NULL,
-  DESTINATION_BUFFER_NULL,
   DATA_NULL,
   LIST_NULL,
-  INDEX_OUT_OF_BOUNDS,
+  INDEX_OUT_OF_RANGE,
+  LOWER_BOUND_OUT_OF_RANGE,
+  UPPER_BOUND_OUT_OF_RANGE,
+  BOUNDS_INVERTED,
   LIST_EMPTY,
   DATA_NOT_FOUND
 } GLLError;
 
 static char const * const gll_error_message[] = {
+  "Unknown error occurred.",
   "No error.",
-  "Error allocating memory using calloc.",
+  "Not enough memory.",
   "Data size is set to zero.",
   "Pointer to `data_to_string` function is NULL.",
   "Pointer to `data_compare` function is NULL.",
-  "Pointer to destination buffer is NULL.",
   "Pointer to data is NULL.",
   "Pointer to list is NULL.",
-  "Index out of bounds.",
+  "Index is out of range.",
+  "Lower bound is out of range.",
+  "Upper bound is out of range.",
+  "Lower bound is greater than upper bound.",
   "List is empty.",
   "Data not found."
 };
@@ -102,8 +108,8 @@ static char const * const gll_error_message[] = {
  * 
  * -------------------------------------------------------------------------- */
 typedef struct _gll_node {
-    void *data;
-    struct _gll_node *next;
+  void *data;
+  struct _gll_node *next;
 } _GLLNode;
 
 /* -------------------------------------------------------------------------- 
@@ -139,12 +145,12 @@ typedef struct _gll_node {
  * 
  * -------------------------------------------------------------------------- */
 typedef struct _gll_list {
-    size_t data_size;
-    _GLLNode *head;
-    _GLLNode *tail;
-    size_t size;
-    int (*data_to_string)(char **buffer, void *data, GLLError *error);
-    char (*data_compare)(void *data1, void *data2);
+  size_t data_size;
+  _GLLNode *head;
+  _GLLNode *tail;
+  size_t size;
+  const char *(*data_str)(void *data, GLLError *error);
+  char (*data_compare)(void *data1, void *data2);
 } GLLList;
 
 
@@ -153,7 +159,7 @@ typedef struct _gll_list {
  * ========================================================================== */
 
 /* -------------------------------------------------------------------------- 
- * Function: _gll_create_node
+ * Function: _gll_new_node
  * -------------------------------------------------------------------------- 
  * Description: Create a new node for the linked list.
  * 
@@ -193,14 +199,14 @@ typedef struct _gll_list {
  *  - _GLLNode *: A pointer to the new node.
  * 
  * -------------------------------------------------------------------------- */
-_GLLNode *_gll_create_node(
+_GLLNode *_gll_new_node(
   const void *data,
   const size_t data_size,
   GLLError *error
 );
 
 /* --------------------------------------------------------------------------   
-  * Function: gll_create
+  * Function: gll_new_list
   * -------------------------------------------------------------------------   
   * 
   * Description: Create a generic linked list.
@@ -232,9 +238,9 @@ _GLLNode *_gll_create_node(
   * - GLLList: pointer to the generic linked list.
   * 
   * ------------------------------------------------------------------------- */
-GLLList *gll_create(
+GLLList *gll_new_list(
   const size_t data_size,
-  int (*data_to_string)(char **buffer, void *data, GLLError *error),
+  const char *(*data_str)(void *data, GLLError *error),
   char (*data_compare)(void *data1, void *data2),
   GLLError *error
 );
@@ -314,7 +320,7 @@ void *gll_pop_front(
   GLLError *error
 );
 
-GLLList *gll_delete_at_front(
+GLLList *gll_delete_front(
   GLLList *list,
   GLLError *error
 );
@@ -324,12 +330,12 @@ void *gll_pop_back(
   GLLError *error
 );
 
-GLLList *gll_delete_at_back(
+GLLList *gll_delete_back(
   GLLList *list,
   GLLError *error
 );
 
-void gll_node_free(_GLLNode *node);
+void gll_free_node(_GLLNode *node);
 
 /* --------------------------------------------------------------------------
  * Function: gll_free
@@ -352,7 +358,7 @@ void gll_node_free(_GLLNode *node);
  * Return: void
  * 
  * -------------------------------------------------------------------------- */
-void gll_free(GLLList *list);
+void gll_free_list(GLLList *list);
 
 /* --------------------------------------------------------------------------
  * Function: gll_is_empty
@@ -424,14 +430,14 @@ size_t gll_size(GLLList *list, GLLError *error);
  * -------------------------------------------------------------------------- */
 size_t gll_contains(GLLList *list, void *data, GLLError *error);
 
-size_t gll_count_occurrences(
+size_t gll_occurrences(
   GLLList *list,
   void *data,
   GLLError *error
 );
 
 /* --------------------------------------------------------------------------   
- * Function: gll_get_data
+ * Function: gll_peek
  * --------------------------------------------------------------------------   
  * 
  * Description: Retrieve the data stored in the node at the specified index.
@@ -469,7 +475,7 @@ size_t gll_count_occurrences(
  *            list is NULL, empty, or the index is out of bounds.
  * 
  * -------------------------------------------------------------------------- */
-void *gll_get_data(GLLList *list, size_t index, GLLError *error);
+void *gll_peek(GLLList *list, size_t index, GLLError *error);
 
 /* --------------------------------------------------------------------------
  * Function: gll_get_node
@@ -548,11 +554,18 @@ _GLLNode *gll_get_node(
  *         error occurs.
  * 
  * -------------------------------------------------------------------------- */
-int gll_to_string(
-  char **buffer,
+const char *gll_list_str(GLLList *list, GLLError *error);
+
+const char *_gll_list_str_range(
   GLLList *list,
+  size_t start,
+  size_t end,
   GLLError *error
 );
+
+void gll_set_err_code(GLLError *status, GLLError code);
+
+void *gll_calloc(size_t number, size_t size, GLLError *status);
 
 /* ==========================================================================
  * End of Header guard
