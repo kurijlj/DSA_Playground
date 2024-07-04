@@ -335,7 +335,7 @@ GLLList *gll_delete_back(
   GLLError *error
 );
 
-void gll_free_node(_GLLNode *node);
+void _gll_free_node(_GLLNode *node);
 
 /* --------------------------------------------------------------------------
  * Function: gll_free
@@ -566,6 +566,9 @@ const char *_gll_list_str_range(
 void gll_set_err_code(GLLError *status, GLLError code);
 
 void *gll_calloc(size_t number, size_t size, GLLError *status);
+
+void *gll_realloc(void *ptr, size_t new_size, GLLError *status);
+
 
 /* ==========================================================================
  * End of Header guard
