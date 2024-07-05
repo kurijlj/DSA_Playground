@@ -39,6 +39,7 @@
 /* Standard Library headers */
 #include <errno.h>
 #include <limits.h>
+#include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -745,4 +746,19 @@ void *gll_realloc(void *ptr, size_t new_size, GLLError *status) {
 
   return buffer;
 }
+
+void gll_multi_free(size_t count, ...) {
+    va_list args;
+    va_start(args, count);
+    for (size_t i = 0; i < count; ++i) {
+        void *buffer = va_arg(args, void *);
+        if (NULL != buffer) {
+            free(buffer);
+        }
+    }
+    va_end(args);
+
+    return;
+}
+
 /* End of generic_Linked_list.c */

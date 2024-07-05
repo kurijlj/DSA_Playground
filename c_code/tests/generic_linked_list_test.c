@@ -61,6 +61,8 @@
  * Utility Function Declarations Section
  * ========================================================================== */
 
+const char *expected_str_range(int *data, size_t start, size_t end);
+
 
 /* ==========================================================================
  * User Defined Function Declarations Section
@@ -153,6 +155,38 @@ static const MunitSuite test_suite = {
 
 int main(int argc, char *argv[]) {
   return munit_suite_main(&test_suite, NULL, argc, argv);
+}
+
+
+/* ==========================================================================
+ * Utility Function Declarations Section
+ * ========================================================================== */
+
+const char *expected_str_range(int *data, size_t start, size_t end) {
+  GLLError error = NO_ERROR;
+  char *expected = NULL;
+  int dl = 0;
+
+  for (size_t i = start; i <= end; i++) {
+    dl = snprintf(NULL, 0, "%d", *(data + i));
+    if (i == start) {
+      expected = gll_calloc(dl + 1, sizeof(char), &error);
+      munit_assert_int(error, ==, NO_ERROR);
+      munit_assert_ptr_not_null(expected);
+      snprintf(expected, dl + 1, "%d", *(data + i));
+    } else {
+      size_t expected_len = strlen(expected);
+      expected = gll_realloc(expected, expected_len + dl + 3, &error);
+      munit_assert_int(error, ==, NO_ERROR);
+      munit_assert_ptr_not_null(expected);
+      snprintf(expected + expected_len, dl + 3, ", %d", *(data + i));
+    }
+    
+    /* Reset data length */
+    dl = 0;
+  }
+
+  return (const char *) expected;
 }
 
 
@@ -466,7 +500,7 @@ static MunitResult list_range_to_string_test(
   GLLError error = NO_ERROR;
   GLLList *list = NULL;
   const char *buffer = NULL;
-  char *expected = NULL;
+  const char *expected = NULL;
   int dl = 0;
 
   /* Test passing NULL list ------------------------------------------------- */
@@ -509,18 +543,12 @@ static MunitResult list_range_to_string_test(
   munit_assert_int(error, ==, NO_ERROR);
   munit_assert_ptr_not_null(buffer);
 
-  dl = snprintf(NULL, 0, "%d", *ref_data);
-  expected = gll_calloc(dl + 1, sizeof(char), &error);
-  munit_assert_int(error, ==, NO_ERROR);
-  munit_assert_ptr_not_null(expected);
-  snprintf(expected, dl + 1, "%d", *ref_data);
-  munit_assert_size(strlen(expected), ==, strlen(buffer));
-  munit_assert_string_equal(expected, buffer);
+  /* Format the expected string */
+  expected = expected_str_range(ref_data, 0, 0);
 
   /* Clean up */
+  gll_multi_free(2, buffer, expected);
   error = NO_ERROR;
-  free((void *) buffer);
-  free(expected);
   dl = 0;
 
   /* Test 10 elements list -------------------------------------------------- */
@@ -536,19 +564,12 @@ static MunitResult list_range_to_string_test(
     munit_assert_int(error, ==, NO_ERROR);
     munit_assert_ptr_not_null(buffer);
 
-    /* Calculate the expected string */
-    dl = snprintf(NULL, 0, "%d", *(ref_data + i));
-    expected = gll_calloc(dl + 1, sizeof(char), &error);
-    munit_assert_int(error, ==, NO_ERROR);
-    munit_assert_ptr_not_null(expected);
-    snprintf(expected, dl + 1, "%d", *(ref_data + i));
-    munit_assert_size(strlen(expected), ==, strlen(buffer));
-    munit_assert_string_equal(expected, buffer);
+    /* Format the expected string */
+    expected = expected_str_range(ref_data, i, i);
 
     /* Clean up */
+    gll_multi_free(2, buffer, expected);
     error = NO_ERROR;
-    free((void *) buffer);
-    free(expected);
     dl = 0;
   }
 
@@ -558,33 +579,15 @@ static MunitResult list_range_to_string_test(
   munit_assert_ptr_not_null(buffer);
 
   /* Format the expected string */
-  for (int i = 0; i < 3; i++) {
-    dl = snprintf(NULL, 0, "%d", *(ref_data + i));
-    if (i == 0) {
-      expected = gll_calloc(dl + 1, sizeof(char), &error);
-      munit_assert_int(error, ==, NO_ERROR);
-      munit_assert_ptr_not_null(expected);
-      snprintf(expected, dl + 1, "%d", *(ref_data + i));
-    } else {
-      size_t expected_len = strlen(expected);
-      expected = gll_realloc(expected, expected_len + dl + 3, &error);
-      munit_assert_int(error, ==, NO_ERROR);
-      munit_assert_ptr_not_null(expected);
-      snprintf(expected + expected_len, dl + 3, ", %d", *(ref_data + i));
-    }
-    
-    /* Reset data length */
-    dl = 0;
-  }
+  expected = expected_str_range(ref_data, 0, 2);
 
   /* Compare buffer against expected */
   munit_assert_size(strlen(expected), ==, strlen(buffer));
   munit_assert_string_equal(expected, buffer);
 
   /* Clean up */
+  gll_multi_free(2, buffer, expected);
   error = NO_ERROR;
-  free((void *) buffer);
-  free(expected);
   dl = 0;
 
   /* Test for last three elements */
@@ -593,33 +596,15 @@ static MunitResult list_range_to_string_test(
   munit_assert_ptr_not_null(buffer);
 
   /* Format the expected string */
-  for (int i = 7; i < 10; i++) {
-    dl = snprintf(NULL, 0, "%d", *(ref_data + i));
-    if (i == 7) {
-      expected = gll_calloc(dl + 1, sizeof(char), &error);
-      munit_assert_int(error, ==, NO_ERROR);
-      munit_assert_ptr_not_null(expected);
-      snprintf(expected, dl + 1, "%d", *(ref_data + i));
-    } else {
-      size_t expected_len = strlen(expected);
-      expected = gll_realloc(expected, expected_len + dl + 3, &error);
-      munit_assert_int(error, ==, NO_ERROR);
-      munit_assert_ptr_not_null(expected);
-      snprintf(expected + expected_len, dl + 3, ", %d", *(ref_data + i));
-    }
-    
-    /* Reset data length */
-    dl = 0;
-  }
+  expected = expected_str_range(ref_data, 7, 9);
 
   /* Compare buffer against expected */
   munit_assert_size(strlen(expected), ==, strlen(buffer));
   munit_assert_string_equal(expected, buffer);
 
   /* Clean up */
+  gll_multi_free(2, buffer, expected);
   error = NO_ERROR;
-  free((void *) buffer);
-  free(expected);
   dl = 0;
 
   /* Test for first seven elements */
@@ -628,33 +613,15 @@ static MunitResult list_range_to_string_test(
   munit_assert_ptr_not_null(buffer);
 
   /* Format the expected string */
-  for (int i = 0; i < 7; i++) {
-    dl = snprintf(NULL, 0, "%d", *(ref_data + i));
-    if (i == 0) {
-      expected = gll_calloc(dl + 1, sizeof(char), &error);
-      munit_assert_int(error, ==, NO_ERROR);
-      munit_assert_ptr_not_null(expected);
-      snprintf(expected, dl + 1, "%d", *(ref_data + i));
-    } else {
-      size_t expected_len = strlen(expected);
-      expected = gll_realloc(expected, expected_len + dl + 3, &error);
-      munit_assert_int(error, ==, NO_ERROR);
-      munit_assert_ptr_not_null(expected);
-      snprintf(expected + expected_len, dl + 3, ", %d", *(ref_data + i));
-    }
-    
-    /* Reset data length */
-    dl = 0;
-  }
+  expected = expected_str_range(ref_data, 0, 6);
 
   /* Compare buffer against expected */
   munit_assert_size(strlen(expected), ==, strlen(buffer));
   munit_assert_string_equal(expected, buffer);
 
   /* Clean up */
+  gll_multi_free(2, buffer, expected);
   error = NO_ERROR;
-  free((void *) buffer);
-  free(expected);
   dl = 0;
 
   return MUNIT_OK;

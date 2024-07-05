@@ -569,6 +569,7 @@ void *gll_calloc(size_t number, size_t size, GLLError *status);
 
 void *gll_realloc(void *ptr, size_t new_size, GLLError *status);
 
+void gll_multi_free(size_t count, ...);
 
 /* ==========================================================================
  * End of Header guard
