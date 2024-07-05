@@ -556,6 +556,8 @@ const char *gll_list_str(
     GLLError *error
   ) {
   char *buffer = NULL;  /* Buffer for the string representation of the list */
+  char *temp = NULL;  /* Holds the result of realloc() */
+  size_t buffer_len = 0;  /* Length of the buffer */
 
   gll_set_err_code(error, NO_ERROR);  /* Clear error code */
 
@@ -565,6 +567,8 @@ const char *gll_list_str(
     return (const char *)buffer;  /* ... so we return NULL */
   }
 
+  /* Format the list string prefix ------------------------------------------ */
+
   /* Try to allocate memory for the buffer */
   buffer = gll_calloc(9, sizeof(char), error);
   if (NULL == buffer) {
@@ -572,45 +576,93 @@ const char *gll_list_str(
   }
 
   snprintf(buffer, 9, "GLLList(");  /* List string prefix */
+  buffer_len = strlen(buffer);  /* Update the buffer length */
 
-  if (0 == list->size) {
-    strncat(buffer, "None)", strlen("None)"));  /* Empty list */
+  if (0 == list->size) {  /* ... the list is empty */
+
+    /* Resize the buffer to accommodate the empty list string */
+    temp = gll_realloc(buffer, buffer_len + 6, error);
+
+    if (NULL == temp) {  /* ... memory allocation failed */
+      free(buffer);
+      buffer = NULL;
+      return (const char *) buffer;  /* ... bail out. We return nothing */
+    }
+
+    /* Update the buffer */
+    buffer = temp;
+    temp = NULL;
+
+    /* Format the rest of the string */
+    snprintf(buffer + buffer_len, 6, "None)");  /* Empty list */
     return (const char *)buffer;  /* ... nothing more to do */
   }
 
+  /* Format the list string data -------------------------------------------- */
+
   /* Data string buffer */
   char *data_str = NULL;
+  size_t data_str_len = 0;
 
   /* If the list contains up to 7 elements, we populate the buffer with the
      data strings of the elements in the list.
    */
   if (list->size <= 7) {
     data_str = (char *) _gll_list_str_range(list, 0, list->size - 1, error);
+    data_str_len = strlen(data_str);
 
     if (NULL == data_str) {  /* ... memory allocation failed */
       free(buffer);
       buffer = NULL;
-      return (const char *) buffer;  /* ... bail out */
+      return (const char *) buffer;  /* ... bail out. We return nothing */
     }
 
+    /* Resize the buffer to accommodate the data string */
+    temp = gll_realloc(buffer, buffer_len + data_str_len + 1, error);
+
+    if (NULL == temp) {  /* ... memory allocation failed */
+      gll_multi_free(2, data_str, buffer);
+      data_str = buffer = NULL;
+      return (const char *) buffer;  /* ... bail out. We return nothing */
+    }
+
+    /* Update the buffer */
+    buffer = temp;
+    temp = NULL;
+
     /* Add the data string to the buffer */
-    strncat(buffer, data_str, strlen(data_str));
+    snprintf(buffer + buffer_len, data_str_len + 1, "%s", data_str);
+    buffer_len = strlen(buffer);  /* Update the buffer length */
   } else {
     /* If the list contains more than 7 elements, we populate the buffer with
        the data strings of the first 3 elements, the last 3 elements, and the
        ellipsis in between.
      */
     data_str = (char *) _gll_list_str_range(list, 0, 2, error);
+    data_str_len = strlen(data_str);
 
     if (NULL == data_str) {  /* ... memory allocation failed */
       free(buffer);
       buffer = NULL;
-      return (const char *) buffer;  /* ... bail out */
+      return (const char *) buffer;  /* ... bail out. We return nothing */
     }
 
+    /* Resize the buffer to accommodate the data string */
+    temp = gll_realloc(buffer, 9 + data_str_len + 8, error);
+
+    if (NULL == temp) {  /* ... memory allocation failed */
+      gll_multi_free(2, data_str, buffer);
+      data_str = buffer = NULL;
+      return (const char *) buffer;  /* ... bail out. We return nothing */
+    }
+
+    /* Update the buffer */
+    buffer = temp;
+    temp = NULL;
+
     /* Add the data string to the buffer */
-    strncat(buffer, data_str, strlen(data_str));
-    strncat(buffer, ", ... , ", 8);  /* Ellipsis */
+    snprintf(buffer + buffer_len, data_str_len + 8, "%s, ..., ", data_str);
+    buffer_len = strlen(buffer);  /* Update the buffer length */
     free(data_str);
     data_str = NULL;
 
@@ -620,14 +672,48 @@ const char *gll_list_str(
     if (NULL == data_str) {  /* ... memory allocation failed */
       free(buffer);
       buffer = NULL;
-      return (const char *)buffer;  /* ... bail out */
+      return (const char *)buffer;  /* ... bail out. We return nothing */
     }
 
+    /* Resize the buffer to accommodate the data string */
+    temp = gll_realloc(buffer, buffer_len + data_str_len, error);
+
+    if (NULL == temp) {  /* ... memory allocation failed */
+      gll_multi_free(2, data_str, buffer);
+      data_str = buffer = NULL;
+      return (const char *) buffer;  /* ... bail out. We return nothing */
+    }
+
+    /* Update the buffer */
+    buffer = temp;
+    temp = NULL;
+
     /* Add the data string to the buffer */
-    strncat(buffer, data_str, strlen(data_str));
+    snprintf(buffer + buffer_len, data_str_len + 1, "%s", data_str);
+    buffer_len = strlen(buffer);  /* Update the buffer length */
   }
 
-  strncat(buffer, ")", 1);  /* List string postfix */
+  /* Free the data string buffer */
+  free(data_str);
+  data_str = NULL;
+
+  /* Add the list string postfix -------------------------------------------- */
+
+  /* Resize the buffer to accommodate the postfix */
+  temp = gll_realloc(buffer, strlen(buffer) + 2, error);
+
+  if (NULL == temp) {  /* ... memory allocation failed */
+    free(buffer);
+    buffer = NULL;
+    return (const char *) buffer;  /* ... bail out. We return nothing */
+  }
+
+  /* Update the buffer */
+  buffer = temp;
+  temp = NULL;
+
+  /* Format the rest of the string */
+  snprintf(buffer + buffer_len, 2, ")");  /* List string postfix */
 
   return (const char *)buffer;
 }
@@ -639,6 +725,7 @@ const char *_gll_list_str_range(
   GLLError *error
 ) {
   char *dest_str = NULL;  /* Buffer for the string representation of the list */
+  char *temp = NULL;  /* Holds the result of realloc() */
 
   gll_set_err_code(error, NO_ERROR);  /* Clear error code */
 
@@ -692,7 +779,7 @@ const char *_gll_list_str_range(
       dest_str = gll_calloc(strlen(data_str) + 1, sizeof(char), error);
 
       if (NULL == dest_str) {  /* ... memory allocation failed */
-        free(data_str);
+        free((void *) data_str);
         data_str = NULL;
         return (const char *) dest_str;  /* ... bail out */
       }
@@ -701,7 +788,19 @@ const char *_gll_list_str_range(
       snprintf(dest_str, data_str_len + 1, "%s", data_str);
     } else {
       size_t dest_str_len = strlen(dest_str);
-      dest_str = gll_realloc(dest_str, dest_str_len + data_str_len + 3, error);
+      temp = gll_realloc(dest_str, dest_str_len + data_str_len + 3, error);
+
+      if (NULL == temp) {  /* ... memory allocation failed */
+        gll_multi_free(2, (void *) data_str, (void *) dest_str);
+        data_str = NULL;
+        dest_str = NULL;  /* ... we return nothing */
+        return (const char *) dest_str;  /* ... bail out */
+      }
+
+      /* Update the buffer */
+      dest_str = temp;
+      temp = NULL;
+
       snprintf(dest_str + dest_str_len, data_str_len + 3, ", %s", data_str);
     }
 

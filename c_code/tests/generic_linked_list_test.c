@@ -62,6 +62,7 @@
  * ========================================================================== */
 
 const char *expected_str_range(int *data, size_t start, size_t end);
+const char *expected_str_list(int *data, size_t start, size_t end);
 
 
 /* ==========================================================================
@@ -92,6 +93,8 @@ static MunitResult create_list_test(const MunitParameter params[],
 static MunitResult free_list_test(const MunitParameter params[],
   void* fixture);
 static MunitResult list_range_to_string_test(const MunitParameter params[],
+  void* fixture);
+static MunitResult list_to_string_test(const MunitParameter params[],
   void* fixture);
 
 /* Tets array --------------------------------------------------------------- */
@@ -131,6 +134,14 @@ MunitTest tests[] = {
   {
     "/list-rts", /* name */
     list_range_to_string_test, /* test */
+    create_list_fixture, /* setup */
+    free_list_fixture, /* tear_down */
+    MUNIT_TEST_OPTION_NONE, /* options */
+    NULL /* parameters */
+  },
+  {
+    "/list-to-string", /* name */
+    list_to_string_test, /* test */
     create_list_fixture, /* setup */
     free_list_fixture, /* tear_down */
     MUNIT_TEST_OPTION_NONE, /* options */
@@ -184,6 +195,55 @@ const char *expected_str_range(int *data, size_t start, size_t end) {
     
     /* Reset data length */
     dl = 0;
+  }
+
+  return (const char *) expected;
+}
+
+const char *expected_str_list(int *data, size_t start, size_t end) {
+  GLLError error = NO_ERROR;
+  char *expected = NULL;
+
+  if (7 >= end - start) {
+    const char *data_str = NULL;
+    size_t data_str_len = 0;
+
+    data_str = expected_str_range(data, start, end);
+    munit_assert_ptr_not_null(data_str);
+    data_str_len = strlen(data_str);
+
+    expected = gll_calloc(data_str_len + 10, sizeof(char), &error);
+    munit_assert_int(error, ==, NO_ERROR);
+    munit_assert_ptr_not_null(expected);
+
+    snprintf(expected, data_str_len + 10, "GLLList(%s)", data_str);
+
+    free((void *) data_str);
+
+  } else {
+    const char *data_str_a = NULL;
+    const char *data_str_b = NULL;
+    size_t data_str_len_a = 0;
+    size_t data_str_len_b = 0;
+
+    data_str_a = expected_str_range(data, start, start + 2);
+    munit_assert_ptr_not_null(data_str_a);
+    data_str_len_a = strlen(data_str_a);
+
+    data_str_b = expected_str_range(data, end - 2, end);
+    munit_assert_ptr_not_null(data_str_b);
+    data_str_len_b = strlen(data_str_b);
+
+    expected = gll_calloc(data_str_len_a + data_str_len_b + 17,
+      sizeof(char), &error);
+    munit_assert_int(error, ==, NO_ERROR);
+    munit_assert_ptr_not_null(expected);
+
+    snprintf(expected, data_str_len_a + data_str_len_b + 17,
+      "GLLList(%s, ..., %s)", data_str_a, data_str_b);
+
+    free((void *) data_str_a);
+    free((void *) data_str_b);
   }
 
   return (const char *) expected;
@@ -490,7 +550,7 @@ static MunitResult free_list_test(
   return MUNIT_OK;
 }
 
-/* gll_to_string test ------------------------------------------------------- */
+/* _gll_list_str_range test ------------------------------------------------- */
 static MunitResult list_range_to_string_test(
     const MunitParameter params[],
     void* fixture
@@ -501,7 +561,6 @@ static MunitResult list_range_to_string_test(
   GLLList *list = NULL;
   const char *buffer = NULL;
   const char *expected = NULL;
-  int dl = 0;
 
   /* Test passing NULL list ------------------------------------------------- */
   _gll_list_str_range(NULL, 0, 0, &error);
@@ -549,7 +608,6 @@ static MunitResult list_range_to_string_test(
   /* Clean up */
   gll_multi_free(2, buffer, expected);
   error = NO_ERROR;
-  dl = 0;
 
   /* Test 10 elements list -------------------------------------------------- */
   list = (GLLList *) *((GLLList **) fixture + 3);
@@ -570,7 +628,6 @@ static MunitResult list_range_to_string_test(
     /* Clean up */
     gll_multi_free(2, buffer, expected);
     error = NO_ERROR;
-    dl = 0;
   }
 
   /* Test for first three elements */
@@ -588,7 +645,6 @@ static MunitResult list_range_to_string_test(
   /* Clean up */
   gll_multi_free(2, buffer, expected);
   error = NO_ERROR;
-  dl = 0;
 
   /* Test for last three elements */
   buffer = _gll_list_str_range(list, 7, 9, &error);
@@ -605,7 +661,6 @@ static MunitResult list_range_to_string_test(
   /* Clean up */
   gll_multi_free(2, buffer, expected);
   error = NO_ERROR;
-  dl = 0;
 
   /* Test for first seven elements */
   buffer = _gll_list_str_range(list, 0, 6, &error);
@@ -622,7 +677,83 @@ static MunitResult list_range_to_string_test(
   /* Clean up */
   gll_multi_free(2, buffer, expected);
   error = NO_ERROR;
-  dl = 0;
+
+  return MUNIT_OK;
+}
+
+/* gll_list_str test -------------------------------------------------------- */
+static MunitResult list_to_string_test(
+    const MunitParameter params[],
+    void* fixture
+  ) {
+  (MunitParameter *) params; /* unused */
+
+  GLLError error = NO_ERROR;
+  GLLList *list = NULL;
+  const char *buffer = NULL;
+  const char *expected = NULL;
+
+  /* Test passing NULL list ------------------------------------------------- */
+  gll_list_str(NULL, &error);
+  munit_assert_int(error, ==, LIST_NULL);
+
+  /* Reset error */
+  error = NO_ERROR;
+
+  /* Test passing an empty list --------------------------------------------- */
+  expected = "GLLList(None)";
+  list = (GLLList *) *((GLLList **) fixture + 1);
+  buffer = gll_list_str(list, &error);
+  munit_assert_int(error, ==, NO_ERROR);
+  munit_assert_ptr_not_null(buffer);
+  munit_assert_size(strlen(buffer), ==, strlen(expected));
+  munit_assert_string_equal(buffer, expected);
+
+  /* Clean up */
+  gll_multi_free(1, buffer);
+  error = NO_ERROR;
+
+  /* Get the reference data ------------------------------------------------- */
+  int *ref_data = (int *) *((void **) fixture);
+
+  /* Test one element list -------------------------------------------------- */
+  expected = expected_str_list(ref_data, 0, 0);
+  list = (GLLList *) *((GLLList **) fixture + 2);
+  buffer = gll_list_str(list, &error);
+  munit_assert_int(error, ==, NO_ERROR);
+  munit_assert_ptr_not_null(buffer);
+  munit_assert_size(strlen(buffer), ==, strlen(expected));
+  munit_assert_string_equal(buffer, expected);
+
+  /* Clean up */
+  gll_multi_free(2, buffer, expected);
+  error = NO_ERROR;
+
+  /* Test 10 elements list -------------------------------------------------- */
+  expected = expected_str_list(ref_data, 0, 9);
+  list = (GLLList *) *((GLLList **) fixture + 3);
+  buffer = gll_list_str(list, &error);
+  munit_assert_int(error, ==, NO_ERROR);
+  munit_assert_ptr_not_null(buffer);
+  munit_assert_size(strlen(buffer), ==, strlen(expected));
+  munit_assert_string_equal(buffer, expected);
+
+  /* Clean up */
+  gll_multi_free(2, buffer, expected);
+  error = NO_ERROR;
+
+  /* Test one million elements list ----------------------------------------- */
+  expected = expected_str_list(ref_data, 0, 999999);
+  list = (GLLList *) *((GLLList **) fixture + 4);
+  buffer = gll_list_str(list, &error);
+  munit_assert_int(error, ==, NO_ERROR);
+  munit_assert_ptr_not_null(buffer);
+  munit_assert_size(strlen(buffer), ==, strlen(expected));
+  munit_assert_string_equal(buffer, expected);
+
+  /* Clean up */
+  gll_multi_free(2, buffer, expected);
+  error = NO_ERROR;
 
   return MUNIT_OK;
 }
