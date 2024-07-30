@@ -379,7 +379,7 @@ bool gll_is_empty(GLLList *list, GLLError *error) {
   /* A guard clause to check if the list is NULL */
   if (NULL == list) {
     gll_set_err_code(error, LIST_NULL);
-    return list;
+    return true;
   }
 
   return 0 == list->size;
@@ -391,7 +391,7 @@ size_t gll_size(GLLList *list, GLLError *error) {
   /* A guard clause to check if the list is NULL */
   if (NULL == list) {
     gll_set_err_code(error, LIST_NULL);
-    return SIZE_MAX;
+    return 0;
   }
 
   return list->size;
@@ -517,7 +517,7 @@ void *gll_peek(GLLList *list, size_t index, GLLError *error) {
   return data;  /* ... return the data */
 }
 
-_GLLNode *gll_get_node(
+_GLLNode *_gll_get_node(
     GLLList *list,
     size_t index,
     GLLError *error
@@ -763,7 +763,7 @@ const char *_gll_list_str_range(
 
   /* Populate buffer with the data strings of the elements in the range */
   for(size_t i = start; end >= i; i++) {
-    data_str = list->data_str(gll_get_node(list, i, NULL)->data, error);
+    data_str = list->data_str(_gll_get_node(list, i, NULL)->data, error);
     size_t data_str_len = strlen(data_str);
 
     if (NULL == data_str) {  /* ... memory allocation failed */
